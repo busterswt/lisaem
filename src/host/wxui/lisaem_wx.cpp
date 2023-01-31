@@ -8605,18 +8605,18 @@ extern "C" void sound_play(uint16 t2)
     my_lisaframe->lastclk=cpu68k_clocks;
 
 #ifdef DEBUG
-    if ((iorom & 0xa0)==0xa0) { // check for A8 IOROM
-      if      (t2== ((0x20 >>2) + 0x20) ) ALERT_LOG(0,"HIPTCH 0x28 Lisa 2/5 A8 ROM");
-      else if (t2== ((0x60 >>2) + 0x60) ) ALERT_LOG(0,"LOPTCH 0x78 Lisa 2/5 A8 ROM");
-      else if (t2== ((0xa0 >>2) + 0xa0) ) ALERT_LOG(0,"CLICK  0xc8 Lisa 2/5 A8 ROM");
-      else                                ALERT_LOG(0,"Other sound freq: %02x for Lisa 2/5 A8 ROM (28=high, 78=low)",t2);
+    if ((floppy_iorom & 0xa0)==0xa0) { // check for A8 IOROM
+      if      (t2== ((0x20 >>2) + 0x20) ) { ALERT_LOG(0,"HIPTCH 0x28 Lisa 2/5 A8 ROM"); }
+      else if (t2== ((0x60 >>2) + 0x60) ) { ALERT_LOG(0,"LOPTCH 0x78 Lisa 2/5 A8 ROM"); }
+      else if (t2== ((0xa0 >>2) + 0xa0) ) { ALERT_LOG(0,"CLICK  0xc8 Lisa 2/5 A8 ROM"); }
+      else                                { ALERT_LOG(0,"Other sound freq: %02x for Lisa 2/5 A8 ROM (28=high, 78=low)",t2); }
     }
     else
     {
-      if      (t2==(0x20))                ALERT_LOG(0,"HIPTCH 0x20 Lisa 2/10 88 ROM");
-      else if (t2==(0x60))                ALERT_LOG(0,"LOPTCH 0x60 Lisa 2/10 88 ROM");
-      else if (t2==(0xa0))                ALERT_LOG(0,"CLICK  0xa0 Lisa 2/10 88 ROM");
-      else                                ALERT_LOG(0,"Other sound freq: %02x for Lisa 2/10 88 ROM (20=high, 60=low)",t2);
+      if      (t2==(0x20))              { ALERT_LOG(0,"HIPTCH 0x20 Lisa 2/10 88 ROM"); }
+      else if (t2==(0x60))              { ALERT_LOG(0,"LOPTCH 0x60 Lisa 2/10 88 ROM"); }
+      else if (t2==(0xa0))              { ALERT_LOG(0,"CLICK  0xa0 Lisa 2/10 88 ROM"); }
+      else                              { ALERT_LOG(0,"Other sound freq: %02x for Lisa 2/10 88 ROM (20=high, 60=low)",t2); }
     }
 #endif
 
