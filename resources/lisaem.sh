@@ -12,8 +12,12 @@
 #
 #---------------------------------------------------------------------------
 
-MACHINE=$( ARCHPREFERENCE=arm64,x86_64,ppc64 arch uname -m )
-# x86_64 arm64
+# Prefer arm64, but fall back to x86_64 in the event this is not Apple Silicon
+MACHINE=$( ARCHPREFERENCE=arm64,x86_64 arch uname -m )
+result=$?
+if [ "$result" -ne 0 ]; then
+  MACHINE=$( ARCHPREFERENCE=x86_64 arch uname -m )
+fi
 
 ME="$0"
 #MYDIR="$( dirname ${0})"  # <- this fails when dirname contains spaces
