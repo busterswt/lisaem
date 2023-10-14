@@ -4,18 +4,16 @@
 # macos x launcher for LisaEm
 #
 # Copyright (C) 2020 by Ray Arachelian, All Rights Reserved.
+# Copyright (C) 2023 by Friends of Ray Arachelian
 # Released under the terms of the GPL v3
 #
 # This detects the version of macos x and architecture, and finds the latest
-# version compiled that will work on it. While I could use lipo to glue 
-# PPC32 PPC64, i386, and x86_64, x86_64 has various versions such as for
-# macos 10.8, or 10.10, or 10.15. For macos 10.8 latest wxWidget that works
-# is 3.0.4, but for 10.15 we can use 3.13, etc., and lipo can't help there
+# version compiled that will work on it.
 #
 #---------------------------------------------------------------------------
 
-MACHINE=$( uname -m | sed -e 's/Power Macintosh/ppc/g')
-# x86_64 arm64 ppc
+MACHINE=$( ARCHPREFERENCE=arm64,x86_64,ppc64 arch uname -m )
+# x86_64 arm64
 
 ME="$0"
 #MYDIR="$( dirname ${0})"  # <- this fails when dirname contains spaces
