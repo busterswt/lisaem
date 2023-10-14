@@ -1,8 +1,8 @@
 # LisaEm - An Apple Lisa Emulator
 
-### Copyright © 2022 by Ray Arachelian, All Rights Reserved.
-### Copyright © 2023 by Friends of Ray Arachelian
-### Released under the terms of the [GNU Public License v3](https://www.gnu.org/licenses/gpl-3.0.txt).
+Copyright © 2022 by Ray Arachelian, All Rights Reserved.  
+Copyright © 2023 by Friends of Ray Arachelian.  
+Released under the terms of the [GNU Public License v3](https://www.gnu.org/licenses/gpl-3.0.txt).
 
 ------------------------------------------------------------------------------
 # Helpful Links
@@ -26,13 +26,6 @@ This document contains a few brief updates that are also found in the ChangeLog 
 
 (The updates will go away once the bugs are removed as ChangeLog is better suited for them.)
 
-## How do you pronounce LisaEm
-
-The "Em" at the end of LisaEm is short for emulator, so therefore you say "Lisa" followed by the first syllable in Emulator, "Em", or if you're a native English speaker, sound out the letter M.
-so: lee·suh·em,  \ ˈlē·sə·em \
-
-Nomenclature wise, LisaEm is in line with the other Lisa related things such as Lisa Pascal Workshop, or Lisa Office System, or LisaWrite, or LisaList.
-
 ## Command Line Options
 
 LisaEm accepts the following command line options which can be used to customize it in various situations such as running in a Kiosk mode on a Raspberry Pi inside a 3D printed Apple Lisa case, or for an automation pipeline:
@@ -51,6 +44,20 @@ Usage: lisaem [-h] [-p] [-q] [-f <str>] [-d] [-F[-]] [-z <double>] [-s[-]] [-c <
   -k, --kiosk           kiosk mode (suitable for RPi Lisa case)
   -o, --originctr       skinless mode: center video(-o) vs topleft(-o-)
 ```
+
+## Tested Operating Systems
+
+The following table outlines successful builds against the respective operating systems, architectures, and wxWidget versions:
+
+| OS | Arch | wxWidgets | Status |
+|---|---|---|---|
+| MacOS 13.4.1 | arm64 | 3.2.3 | Tested - OK |
+| MacOS 16.3 | x86_64 | 3.2.3 | Tested - OK |
+| Windows 10 | x86_64 | N/A | Untested |
+| Ubuntu 22.04 | x86_64 | N/A | Untested |
+
+To sustain development efforts, compatibility with legacy architectures (ie. PowerPC) and operating systems (ie. MacOS X < 10.12)
+is not guaranteed and support may be removed.
 
 ## 2021.01.15
 
