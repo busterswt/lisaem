@@ -2,6 +2,9 @@
 Lisa Emulator Change History                         http://lisaem.sunder.net/
 ------------------------------------------------------------------------------
 
+2023.10.14 - Update wxWidgets build script to support 3.2.3. Verified macOS
+             13.6 (Ventura) for arm64 and x86_64.
+
 2023.01.27 - Update wxWidgets build script to support 3.2.1 and MacOS > 10.x.
            - Created a tag for Ray's final RC4 release. The master branch will
              now be the dev branch, and subsequent 'releases' will be tagged.
