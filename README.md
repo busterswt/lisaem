@@ -52,7 +52,7 @@ The following table outlines successful builds against the respective operating 
 | OS | Arch | wxWidgets | Status |
 |---|---|---|---|
 | MacOS 13.4.1 | arm64 | 3.2.3 | Tested - OK |
-| MacOS 16.3 | x86_64 | 3.2.3 | Tested - OK |
+| MacOS 13.6 | x86_64 | 3.2.3 | Tested - OK |
 | Windows 10 | x86_64 | N/A | Untested |
 | Ubuntu 22.04 | x86_64 | N/A | Untested |
 
@@ -104,10 +104,10 @@ Next, open the Cygwin terminal (MinTTY), use the scripts in the scripts director
 
 ## Compiling wxWidgets for your system
 
-The scripts directory contains several scripts that you could use to build wxWidgets for your system. We will generally link LisaEm statically, especially for macOS x and 
+The scripts directory contains several scripts that you could use to build wxWidgets for your system. We will generally link LisaEm statically, especially for macOS X and 
 
 ```
-build-wx3.1.2-modern-macosx.sh
+build-wx3.2.3-modern-macosx.sh
 build-wxwidgets-cygwin-windows.sh
 build-wxwidgets-gtk.sh
 ```
@@ -118,7 +118,7 @@ After wxWidgets is installed to `/usr/local/wxsomething`, add `/usr/local/wxsome
 
 ## Compiling LisaEm (for all platforms):
 
-You will need wxWidgets 3.0.4-3.2.1 installed. Do not use system provided wxWidgets, but rather build your own using the scripts in the scripts directory as mentioned above.
+You will need wxWidgets 3.0.4-3.2.3 installed. Do not use system provided wxWidgets, but rather build your own using the scripts in the scripts directory as mentioned above.
 
 You will want to install/compile wxWidgets **without** the shared library option, except perhaps on GTK systems, but if you do this, it will not be portable except to systems of the same kind and version.
 
@@ -135,6 +135,21 @@ This will install the lisaem and lisafsh-tool binaries to /usr/local/bin, and wi
 
 ![compiling lisaem](resources/2-build-lisaem.gif)
 
+## Compiling LisaEm (MacOS X)
+
+Compiling on MacOS X (or macOS) requires upstream wxWidgets (not system provided). Use the included build scripts with the following directions:
+
+```
+$ git clone https://github.com/arcanebyte/lisaem
+$ cd lisaem
+$ scripts/build-wx3.2.3-modern-macosx.sh --no-minimum-macos --enable-universal_binary=arm64,x86_64
+
+$ export PATH="/usr/local/wx3.2.3-cocoa-macOS-$(sw_vers -productVersion | cut -d. -f1-2)-x86_64,arm64/bin:$PATH"
+$ ./build.sh clean build
+$ sudo ./build.sh install 
+```
+
+The `LisaEm.app` application will be installed in the Applications folder.
 
 ### Cross compiling
 
