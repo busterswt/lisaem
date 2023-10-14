@@ -1,15 +1,16 @@
-![LisaEm Logo](resources/lisaem-banner.png)
+# LisaEm - An Apple Lisa Emulator
 
 ### Copyright © 2022 by Ray Arachelian, All Rights Reserved.
-### Released under the terms of the GNU Public License v3.
+### Copyright © 2023 by Friends of Ray Arachelian
+### Released under the terms of the [GNU Public License v3](https://www.gnu.org/licenses/gpl-3.0.txt).
 
 ------------------------------------------------------------------------------
-# Lisa Emulator Source Build README
+# Helpful Links
  
-* [https://lisaem.sunder.net/]() 
-* [https://lisafaq.sunder.net]() 
-* [https://lisalist2.com]() 
-* [https://github.com/arcanebyte/lisaem]()
+* [https://lisaem.sunder.net/](https://lisaem.sunder.net/)
+* [https://lisafaq.sunder.net/](https://lisafaq.sunder.net/)
+* [https://lisalist2.com](https://lisalist2.com)
+* [https://github.com/arcanebyte/lisaem](https://github.com/arcanebyte/lisaem)
 
 ------------------------------------------------------------------------------
 
