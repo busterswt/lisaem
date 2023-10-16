@@ -16,15 +16,13 @@ Released under the terms of the [GNU Public License v3](https://www.gnu.org/lice
 
 ## What is this thing?
 
-You're looking at the repository for the source code for LisaEm 1.2.7. 
+You're looking at the repository for the source code for the Lisa Emulator Project (LisaEm). 
 
 LisaEm is a emulator that runs on a wide variety of modern and somewhat old systems by means of the wxWidgets framework, implementing an emulation of the (in)famous Apple Lisa Computer. The Apple Lisa computer is the predecessor of the Mac and the "inspiration" of many GUI environments from Windows 1.x to GEOS, GEM, VisiOn, etc. 
 
 Many of the original ideas of the modern GUI, including copy and paste, were first envisioned in the Apple Lisa, so it's a historically very important machine. The seeds of these ideas were first found in the Xerox Alto, but the Lisa took them to their next logical step.
 
 This document contains a few brief updates that are also found in the ChangeLog file, as well as some information on how to compile wxWidgets and LisaEm.
-
-(The updates will go away once the bugs are removed as ChangeLog is better suited for them.)
 
 ## Command Line Options
 
