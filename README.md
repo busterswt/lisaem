@@ -51,6 +51,7 @@ The following table outlines successful builds against the respective operating 
 |---|---|---|---|
 | MacOS 13.4.1 | arm64 | 3.2.3 | Tested - OK |
 | MacOS 13.6 | x86_64 | 3.2.3 | Tested - OK |
+| macOS 14.0 | arm64 | 3.2.4 | Tested - OK |
 | Windows 10 | x86_64 | N/A | Untested |
 | Ubuntu 22.04 | x86_64 | N/A | Untested |
 
@@ -102,12 +103,12 @@ Next, open the Cygwin terminal (MinTTY), use the scripts in the scripts director
 
 ## Compiling wxWidgets for your system
 
-The scripts directory contains several scripts that you could use to build wxWidgets for your system. We will generally link LisaEm statically, especially for macOS X and 
+The scripts directory contains several scripts that you could use to build wxWidgets for your system. We will generally link LisaEm statically, especially for macOS.
 
 ```
-build-wx3.2.3-modern-macosx.sh
-build-wxwidgets-cygwin-windows.sh
-build-wxwidgets-gtk.sh
+scripts/build-wx3.2.4-modern-macosx.sh
+scripts/build-wxwidgets-cygwin-windows.sh
+scripts/build-wxwidgets-gtk.sh
 ```
 After wxWidgets is installed to `/usr/local/wxsomething`, add `/usr/local/wxsomething/bin` to your path before running the LisaEm build script.
 
