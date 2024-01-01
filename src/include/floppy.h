@@ -33,7 +33,7 @@
 #define FLOP_CONTROLLER 0xFCC001
 #define FLOP_CTRLR_RWTS 0x81 /* execute the RWTS routine     */
 #define FLOP_CTRLR_SEEK 0x83 /* seek to side/track           */
-#define FLOP_CTRLR_JSR  0x84 /* JSR to routine in C003-5     */
+#define FLOP_CTRLR_JSR 0x84  /* JSR to routine in C003-5     */
 #define FLOP_CTRLR_CLIS 0x85 /* Clear interrupt status       */
 #define FLOP_CTRLR_STIM 0x86 /* Set interrupt mask           */
 #define FLOP_CTRLR_CLIM 0x87 /* Clear interrupt mask         */
@@ -41,77 +41,77 @@
 #define FLOP_CTRLR_LOOP 0x89 /* Loop in ROM                  */
 
 #define FLOP_COMMAND 0xFCC003
-#define FLOP_CMD_READ   0x00 /* Read                         */
-#define FLOP_CMD_WRITE  0x01 /* Write                        */
+#define FLOP_CMD_READ 0x00   /* Read                         */
+#define FLOP_CMD_WRITE 0x01  /* Write                        */
 #define FLOP_CMD_UCLAMP 0x02 /* Unclamp                      */
 #define FLOP_CMD_FORMAT 0x03 /* Format                       */
 #define FLOP_CMD_VERIFY 0x04 /* Verify                       */
 #define FLOP_CMD_FMTTRK 0x05 /* Format Track                 */
 #define FLOP_CMD_VFYTRK 0x06 /* Verify Track                 */
-#define FLOP_CMD_READX  0x07 /* Read without checksum vfy    */
-#define FLOP_CMD_WRITX  0x08 /* Write without checksum       */
-#define FLOP_CMD_CLAMP  0x09 /* Clamp                        */
+#define FLOP_CMD_READX 0x07  /* Read without checksum vfy    */
+#define FLOP_CMD_WRITX 0x08  /* Write without checksum       */
+#define FLOP_CMD_CLAMP 0x09  /* Clamp                        */
 
 #define FLOP_SELECT 0xFCC005
 #define FLOP_SEL_LOWER 0x00
 #define FLOP_SEL_UPPER 0x80
-#define FLOP_SEL_DRV2  0x00
-#define FLOP_SEL_DRV1  0x80
+#define FLOP_SEL_DRV2 0x00
+#define FLOP_SEL_DRV1 0x80
 
 #define FLOP_SIDE_SELECT 0xFCC007
-#define FLOP_SIDE_1      0x00
-#define FLOP_SIDE_2      0x01
-#define FLOP_SIDE_UPPER  0x00
-#define FLOP_SIDE_LOWER  0x01
+#define FLOP_SIDE_1 0x00
+#define FLOP_SIDE_2 0x01
+#define FLOP_SIDE_UPPER 0x00
+#define FLOP_SIDE_LOWER 0x01
 
-#define FLOP_SECTOR_NUMBER 0xFCC009  /* 0-22 */
-#define FLOP_TRACK_NUMBER  0xFCC00B  /* 0-44 */
-#define FLOP_SPEED_BYTE    0xFCC00D
+#define FLOP_SECTOR_NUMBER 0xFCC009 /* 0-22 */
+#define FLOP_TRACK_NUMBER 0xFCC00B  /* 0-44 */
+#define FLOP_SPEED_BYTE 0xFCC00D
 #define FLOP_FORMAT_CONFIRM 0xFCC00F /* Format confirm byte */
-#define FLOP_ERROR_STATUS   0xFCC011
-#define FLOP_DISK_ID_VALUE  0xFCC013
+#define FLOP_ERROR_STATUS 0xFCC011
+#define FLOP_DISK_ID_VALUE 0xFCC013
 
 // Floppies generalte interrupts to the CPU whenever a disk is inserted,
 // eject button is pressed, whenever an 81 command is completed.
 
 #define FLOP_STATUS 0xFCC05F
-#define FLOP_STAT_INVCMD   0x01  /* invalid command                                  */
-#define FLOP_STAT_INVDRV   0x02  /* invalid drive                                    */
-#define FLOP_STAT_INVSEC   0x03  /* invalid sector                                   */
-#define FLOP_STAT_INVSID   0x04  /* invalid side                                     */
-#define FLOP_STAT_INVTRK   0x05  /* invalid track                                    */
-#define FLOP_STAT_INVCLM   0x06  /* invalid clear mask                               */
-#define FLOP_STAT_NODISK   0x07  /* no disk                                          */
-#define FLOP_STAT_DRVNOT   0x08  /* drive not enabled                                */
-#define FLOP_STAT_IRQPND   0x09  /* Interrupts pending                               */
-#define FLOP_STAT_INVFMT   0x0a  /* Invalid format configuration                     */
-#define FLOP_STAT_BADROM   0x0b  /* ROM Selftest failure                             */
-#define FLOP_STAT_BADIRQ   0x0c  /* Unexpected IRQ or NMI                            */
-#define FLOP_STAT_WRPROT   0x14  /* Write protect error                              */
-#define FLOP_STAT_BADVFY   0x15  /* Unable to verify                                 */
-#define FLOP_STAT_NOCLMP   0x16  /* Unable to clamp disk                             */
-#define FLOP_STAT_NOREAD   0x17  /* Unable to read                                   */
-#define FLOP_STAT_NOWRIT   0x18  /* Unable to write                                  */
-#define FLOP_STAT_NOWRITE  0x18  /* Unable to write                                  */
-#define FLOP_STAT_NOUCLP   0x19  /* Unable to unclamp                                */
-#define FLOP_STAT_NOCALB   0x1A  /* Unable to find calibration                       */
-#define FLOP_STAT_NOSPED   0x1B  /* Unable to adjust speed                           */
-#define FLOP_STAT_NWCALB   0x1C  /* Unable to write calibration                      */
+#define FLOP_STAT_INVCMD 0x01  /* invalid command                                  */
+#define FLOP_STAT_INVDRV 0x02  /* invalid drive                                    */
+#define FLOP_STAT_INVSEC 0x03  /* invalid sector                                   */
+#define FLOP_STAT_INVSID 0x04  /* invalid side                                     */
+#define FLOP_STAT_INVTRK 0x05  /* invalid track                                    */
+#define FLOP_STAT_INVCLM 0x06  /* invalid clear mask                               */
+#define FLOP_STAT_NODISK 0x07  /* no disk                                          */
+#define FLOP_STAT_DRVNOT 0x08  /* drive not enabled                                */
+#define FLOP_STAT_IRQPND 0x09  /* Interrupts pending                               */
+#define FLOP_STAT_INVFMT 0x0a  /* Invalid format configuration                     */
+#define FLOP_STAT_BADROM 0x0b  /* ROM Selftest failure                             */
+#define FLOP_STAT_BADIRQ 0x0c  /* Unexpected IRQ or NMI                            */
+#define FLOP_STAT_WRPROT 0x14  /* Write protect error                              */
+#define FLOP_STAT_BADVFY 0x15  /* Unable to verify                                 */
+#define FLOP_STAT_NOCLMP 0x16  /* Unable to clamp disk                             */
+#define FLOP_STAT_NOREAD 0x17  /* Unable to read                                   */
+#define FLOP_STAT_NOWRIT 0x18  /* Unable to write                                  */
+#define FLOP_STAT_NOWRITE 0x18 /* Unable to write                                  */
+#define FLOP_STAT_NOUCLP 0x19  /* Unable to unclamp                                */
+#define FLOP_STAT_NOCALB 0x1A  /* Unable to find calibration                       */
+#define FLOP_STAT_NOSPED 0x1B  /* Unable to adjust speed                           */
+#define FLOP_STAT_NWCALB 0x1C  /* Unable to write calibration                      */
 
-#define FLOP_CPU_RAM           0xFCC181
-#define FLOP_CPU_RAM_END       0xFCC1FF
+#define FLOP_CPU_RAM 0xFCC181
+#define FLOP_CPU_RAM_END 0xFCC1FF
 
-#define FLOP_XFER_RAM          0xFCC501
-#define FLOP_XFER_RAM_END      0xFCC7FF
+#define FLOP_XFER_RAM 0xFCC501
+#define FLOP_XFER_RAM_END 0xFCC7FF
 
-#define FLOP_IRQ_SRC_DRV2   128      /* set if 4, 5, or 6 set.                        */
-#define FLOP_IRQ_SRC_RWTS2   64      /* set if drive 2 RWTS complete for drive 2      */
-#define FLOP_IRQ_SRC_BTN2    32      /* set if button on disk 2 pressed               */
-#define FLOP_IRQ_SRC_DSKIN2  16      /* set if disk in place in drive 2               */
-#define FLOP_IRQ_SRC_DRV1     8      /* set if bits 0,1 or 2 are set                  */
-#define FLOP_IRQ_SRC_RWTS1    4      /* set if drive 1 RWTS complete for drive 1      */
-#define FLOP_IRQ_SRC_BTN1     2      /* set if button on disk 1 pressed               */
-#define FLOP_IRQ_SRC_DSKIN1   1      /* set if disk inserted in drive 1               */
+#define FLOP_IRQ_SRC_DRV2 128  /* set if 4, 5, or 6 set.                        */
+#define FLOP_IRQ_SRC_RWTS2 64  /* set if drive 2 RWTS complete for drive 2      */
+#define FLOP_IRQ_SRC_BTN2 32   /* set if button on disk 2 pressed               */
+#define FLOP_IRQ_SRC_DSKIN2 16 /* set if disk in place in drive 2               */
+#define FLOP_IRQ_SRC_DRV1 8    /* set if bits 0,1 or 2 are set                  */
+#define FLOP_IRQ_SRC_RWTS1 4   /* set if drive 1 RWTS complete for drive 1      */
+#define FLOP_IRQ_SRC_BTN1 2    /* set if button on disk 1 pressed               */
+#define FLOP_IRQ_SRC_DSKIN1 1  /* set if disk inserted in drive 1               */
 
 /*
 
