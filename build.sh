@@ -34,7 +34,7 @@ fi
        LCNAME="lisaem"                    # lower case name used for the directory
   DESCRIPTION="The first fully functional Lisa Emulator™"   # description of the package
           VER="1.2.7"                     # just the version number
-    STABILITY="RC4"                       # DEVELOP, ALPHA, BETA, RC1, RC2, RC3... 
+    STABILITY="RC5"                       # DEVELOP, ALPHA, BETA, RC1, RC2, RC3... 
                                           # RELEASE/PRODUCTION - PRE-* keep short
                                           # snapcraft limits the length of the version
   RELEASEDATE="2024.01.01"                # release date.  must be YYYY.MM.DD

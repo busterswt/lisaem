@@ -1,6 +1,6 @@
 /**************************************************************************************\
 *                                                                                      *
-*              The Lisa Emulator Project  V1.2.7      RC4 2022.04.01                   *
+*              The Lisa Emulator Project  V1.2.7      RC5 2024.01.01                   *
 *                             http://lisaem.sunder.net                                 *
 *                                                                                      *
 *                  Copyright (C) 1998, 2022 Ray A. Arachelian                          *
@@ -7375,7 +7375,7 @@ void LisaEmFrame::OnQuit(wxCommandEvent& WXUNUSED(event))
       delete my_LisaConfigFrame;
       my_LisaConfigFrame = NULL;
     }
-    Close(); // and bye bye we go.
+    wxExit(); // 2024.01.01 Replaced close() with wxExit()
 #else
   if (my_LisaConfigFrame) // close any ConfigFrame
   {
