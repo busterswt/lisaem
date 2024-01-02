@@ -855,7 +855,7 @@ static void do_floppy_read(DC42ImageType *F)
     floppy_ram[0x1F4 + 10] = 0;
     floppy_ram[0x1F4 + 11] = 0;
 
-    floppy_motor_sounds(floppy_ram[TRACK]);
+    //floppy_motor_sounds(floppy_ram[TRACK]); //JD commented out
 
     DEBUG_LOG(0, "reading data for sector:%d", sectornumber);
     ptr = dc42_read_sector_data(F, sectornumber);
@@ -966,7 +966,7 @@ static void do_floppy_write(DC42ImageType *F)
 
     DEBUG_LOG(0, "write floppy sector #%ld", sectornumber);
 
-    floppy_motor_sounds(floppy_ram[TRACK]);
+    //floppy_motor_sounds(floppy_ram[TRACK]); //JD commented out
 
     dc42_write_sector_tags(F, sectornumber, &floppy_ram[DISKDATAHDR]);
     dc42_write_sector_data(F, sectornumber, &floppy_ram[DISKDATASEC]);

@@ -639,7 +639,7 @@ int romless_boot(int profileboot)
     reg68k_regs[14] = 0x000fb3be;
     reg68k_regs[15] = 0x00000480;
 
-    floppy_motor_sounds(0);
+    //floppy_motor_sounds(0); //JD commenting out
     lisaram[0x801b3] = 1;
   }
 
@@ -970,7 +970,7 @@ void romless_twgread(void)
 
   reg68k_regs[0] = 0;
   reg68k_sr.sr_struct.c = 0;
-  floppy_motor_sounds(track);
+  //floppy_motor_sounds(track); //JD - Commenting out
 }
 
 int romless_entry(void)
