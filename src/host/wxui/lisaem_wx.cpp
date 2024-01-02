@@ -7427,6 +7427,7 @@ void LisaEmFrame::OnConfig(wxCommandEvent& WXUNUSED(event))
 #endif
 
     my_LisaConfigFrame->Show();
+    ALERT_LOG(0, "JD - in void LisaEmFrame::OnConfig and my_LisaConfigFrame->Show")
 }
 
 
@@ -8110,7 +8111,7 @@ extern "C" void eject_floppy_animation(void)
     return;
 }
 
-
+// (TODO) JD - Drive sound emulation might be on the chopping block.
 extern "C" void floppy_motor_sounds(int track)
 {
     // there really are 3-4 speeds, however, my admittedly Bolt Thrower damaged ears can only distinguish two  :)
@@ -9820,12 +9821,27 @@ int initialize_all_subsystems(void)
     }
     else
     {
-      romless = 1; // 0=profile, 1=floppy
-      pickprofile = romlessboot_pick();
-      if (pickprofile < 0)
+      // JD - Bug the user that the ROM has not been set and the Lisa cannot be started.
+      // (TODO) Check for ROM path on every poweron.
+      if (!yesnomessagebox("A valid Lisa BOOT ROM has not been set. This may crash the emulator.  Open preferences?",
+                             "BOOT ROM not set"))
         return -2;
-      ALERT_LOG(0, "picked %d", pickprofile);
+      ALERT_LOG(0, "The path of the ROM file is: %s", tmp)
+      
+      // JD - Open the prefs window to set the ROM path
+      EXTERMINATE(my_LisaConfigFrame);
+      my_LisaConfigFrame = new LisaConfigFrame(wxT("Preferences"), my_lisaconfig);
+      my_LisaConfigFrame->Show();
     }
+    //JD - If we're here, then the ROM path wasn't set. I'd like to see this removed, though.
+    //else
+    //{
+    //  romless = 1; // 0=profile, 1=floppy
+    //  pickprofile = romlessboot_pick();
+    //  if (pickprofile < 0)
+    //    return -2;
+    //  ALERT_LOG(0, "picked %d", pickprofile);
+    //}
 
     setstatusbar("Initializing Lisa Display");
 
@@ -9939,6 +9955,8 @@ int initialize_all_subsystems(void)
     flushscreen();
     // needs to be at the end since romless_boot sets up registers which get whacked by the cpu initialization
 
+    // JD - commenting this entire thing out for now.
+    /*
     if (romless)
     {
       if (pickprofile)
@@ -9951,6 +9969,7 @@ int initialize_all_subsystems(void)
       storeword(0x29a, my_lisaconfig->slot2.IsSameAs(_T("dualparallel"), false) ? (dualparallelrom[0] << 8) | dualparallelrom[1] : 0);
       storeword(0x29c, my_lisaconfig->slot3.IsSameAs(_T("dualparallel"), false) ? (dualparallelrom[0] << 8) | dualparallelrom[1] : 0);
     }
+    */
 
     return 0;
 } ///////////////////// end of load.///////////////////

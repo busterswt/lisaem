@@ -124,6 +124,7 @@ const int idbl[4] = {0, ID_PICK_PROFILESB1L, ID_PICK_PROFILESB2L, ID_PICK_PROFIL
 // idth - upper text field idbh - button upper
 // using wxID_ANY for lower for some reason(why?), idbl - button lower line ~493
 
+// JD - Set the size of the frame here. Ideally 650x650.
 LisaConfigFrame::LisaConfigFrame(const wxString &title, LisaConfig *lisaconfig)
     : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(550 * HIDPISCALE, 650 * HIDPISCALE),
               wxDEFAULT_FRAME_STYLE | wxCLIP_CHILDREN | //|wxNO_FULL_REPAINT_ON_RESIZE)
@@ -344,6 +345,8 @@ void LisaConfigFrame::OnZapPram(wxCommandEvent &WXUNUSED(event))
 
 void LisaConfigFrame::OnApply(wxCommandEvent &WXUNUSED(event))
 {
+    // JD - Consider initating a restart of the application here if the ROM file changes.
+
     // --- configuration page ----------------------------------------------
 
     // if it hasn't been built yet, don't touch!
@@ -629,6 +632,8 @@ wxPanel *LisaConfigFrame::CreateMainConfigPage(wxNotebook *parent)
     y += (ya / 2);
     m_rompath = new wxTextCtrl(panel, wxID_ANY, my_lisaconfig->rompath, wxPoint(10 * HIDPISCALE, y), wxSize(400 * HIDPISCALE, 30 * HIDPISCALE), 0);
     b_rompath = new wxButton(panel, ID_PICK_ROM, wxT("browse"), wxPoint(420 * HIDPISCALE, y), wxDefaultSize);
+    y += ya;
+    (void)new wxStaticText(panel, wxID_ANY, _T("NOTE: Setting Lisa ROM location requires a restart of the application."), wxPoint(7 * HIDPISCALE, y), wxSize(400 * HIDPISCALE, 30 * HIDPISCALE));
     y += ya;
 
     (void)new wxStaticText(panel, wxID_ANY, _T("Dual Parallel Card ROM:"), wxPoint(10, y), wxSize(400 * HIDPISCALE, 30 * HIDPISCALE));
