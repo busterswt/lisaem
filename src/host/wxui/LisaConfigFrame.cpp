@@ -126,7 +126,7 @@ const int idbl[4] = {0, ID_PICK_PROFILESB1L, ID_PICK_PROFILESB2L, ID_PICK_PROFIL
 
 // JD - Set the size of the frame here. Ideally 650x650.
 LisaConfigFrame::LisaConfigFrame(const wxString &title, LisaConfig *lisaconfig)
-    : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(550 * HIDPISCALE, 650 * HIDPISCALE),
+    : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(650 * HIDPISCALE, 650 * HIDPISCALE),
               wxDEFAULT_FRAME_STYLE | wxCLIP_CHILDREN | //|wxNO_FULL_REPAINT_ON_RESIZE)
                   wxMINIMIZE_BOX | wxMAXIMIZE_BOX | wxRESIZE_BORDER | wxSYSTEM_MENU | wxCAPTION |
                   wxTAB_TRAVERSAL | wxCLOSE_BOX | wxNO_FULL_REPAINT_ON_RESIZE)
