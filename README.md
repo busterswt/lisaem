@@ -130,7 +130,7 @@ After installing/compiling wxWidgets, ensure that wx-config is in your path, cd 
 
 (Don't use sudo on Cygwin, instead type in `./build.sh install` and you'll be prompted whether you wish to launch the command in an Administration MinTTY session, then the build will run from a second terminal window that runs within the Administrator context.)
 
-This will install the lisaem and lisafsh-tool binaries to /usr/local/bin, and will install skins and sound files to /usr/local/share/LisaEm/; on Windows it will be installed to C:\Program Files\Sunder.Net\LisaEm and /Applications for macOS.
+This will install the lisaem and lisafsh-tool binaries to /usr/local/bin, and will install skins and sound files to /usr/local/share/LisaEm/; on Windows it will be installed to C:\Program Files\Sunder.Net\LisaEm (you may need to have launched Cygwin as admin to write to Program Files) and /Applications for macOS.
 
 ![compiling lisaem](resources/2-build-lisaem.gif)
 
