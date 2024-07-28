@@ -62,7 +62,7 @@ is not guaranteed and support may be removed.
 
 | OS | Status | Notes |
 |---|---|---|
-| MacWorks XL 3.0 | Tested - OK | Hard disk support untested |
+| MacWorks XL 3.0 | Tested - OK | Hard disk support functional. Requires MW boot disk. |
 | MacWorks Plus 1.0.14 | Tested - Issues | Issues as of RC4 |
 | MacWorks Plus 10.0.18 | Tested - Issues | Issues as of RC4 |
 | MacWorks Plus II 2.5.0 | Tested - Unsupported | Does not boot. Requires PFG |
