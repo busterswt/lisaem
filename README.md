@@ -43,7 +43,7 @@ Usage: lisaem [-h] [-p] [-q] [-f <str>] [-d] [-F[-]] [-z <double>] [-s[-]] [-c <
   -o, --originctr       skinless mode: center video(-o) vs topleft(-o-)
 ```
 
-## Tested Operating Systems
+## Tested Host Operating Systems
 
 The following table outlines successful builds against the respective operating systems, architectures, and wxWidget versions:
 
@@ -57,6 +57,20 @@ The following table outlines successful builds against the respective operating 
 
 To sustain development efforts, compatibility with legacy architectures (ie. PowerPC) and operating systems (ie. MacOS X < 10.12)
 is not guaranteed and support may be removed.
+
+## Tested Emulated Operating Systems
+
+| OS | Status | Notes |
+|---|---|---|
+| MacWorks XL 3.0 | Tested - OK | Hard disk support untested |
+| MacWorks Plus 1.0.14 | Tested - Issues | Issues as of RC4 |
+| MacWorks Plus 10.0.18 | Tested - Issues | Issues as of RC4 |
+| MacWorks Plus II 2.5.0 | Tested - Unsupported | Does not boot. Requires PFG |
+| Lisa Office System 1.x | Untested | |
+| Lisa Office System 2.x | Untested | |
+| Lisa Office System 3.x | Untested | |
+| Microsoft Xenix | Untested | |
+| UniSoft UniPlus Unix V | Untested | |
 
 ## 2021.01.15
 
