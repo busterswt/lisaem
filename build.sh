@@ -37,9 +37,9 @@ fi
     STABILITY="RC5"                       # DEVELOP, ALPHA, BETA, RC1, RC2, RC3... 
                                           # RELEASE/PRODUCTION - PRE-* keep short
                                           # snapcraft limits the length of the version
-  RELEASEDATE="2024.01.01"                # release date.  must be YYYY.MM.DD
-       AUTHOR="Friends of Ray Arachelian"            # name of the author
-    AUTHEMAIL="lisaem@arcanebyte.com"        # email address for this software
+  RELEASEDATE="2024.07.28"                # release date.  must be YYYY.MM.DD
+       AUTHOR="Friends of Ray Arachelian" # name of the author
+    AUTHEMAIL="lisaem@arcanebyte.com"     # email address for this software
       COMPANY="Sunder.NET"                # company (vendor for sun pkg)
         CONAM="SUNDERNET"                 # company short name for Solaris pkgs
           URL="https://lisaem.sunder.net" # url to website of package

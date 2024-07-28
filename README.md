@@ -52,6 +52,7 @@ The following table outlines successful builds against the respective operating 
 | MacOS 13.4.1 | arm64 | 3.2.3 | Tested - OK |
 | MacOS 13.6 | x86_64 | 3.2.3 | Tested - OK |
 | macOS 14.0 | arm64 | 3.2.4 | Tested - OK |
+| MacOS 14.5 | arm64 | 3.2.5 | Tested - OK |
 | Windows 10 | x86_64 | N/A | Untested |
 | Ubuntu 22.04 | x86_64 | N/A | Untested |
 
@@ -60,17 +61,20 @@ is not guaranteed and support may be removed.
 
 ## Tested Emulated Operating Systems
 
+Below is a table of recently tested emulated operating systems. If you've successfully installed something listed (or not listed) here, please email or leave a note.
+
 | OS | Status | Notes |
 |---|---|---|
 | MacWorks XL 3.0 | Tested - OK | Hard disk support functional. Requires MW boot disk. |
 | MacWorks Plus 1.0.14 | Tested - Issues | Issues as of RC4 |
 | MacWorks Plus 10.0.18 | Tested - Issues | Issues as of RC4 |
-| MacWorks Plus II 2.5.0 | Tested - Unsupported | Does not boot. Requires PFG |
+| MacWorks Plus II 2.5.0 | Tested - Unsupported | Does not boot. Requires PFG. |
 | Lisa Office System 1.x | Untested | |
 | Lisa Office System 2.x | Untested | |
-| Lisa Office System 3.x | Untested | |
+| Lisa Office System 3.x | Tested - Issues | Installer boots but fails to install Disk 1. Bails with 'Odd Address Exception' error in debug logs. |
 | Microsoft Xenix | Untested | |
 | UniSoft UniPlus Unix V | Untested | |
+| Lisa Workshop | Untested | |
 
 ## 2021.01.15
 
@@ -119,6 +123,8 @@ Next, open the Cygwin terminal (MinTTY), use the scripts in the scripts director
 
 The scripts directory contains several scripts that you could use to build wxWidgets for your system. We will generally link LisaEm statically, especially for macOS.
 
+NOTE: Some of these scripts are referenced in OS-specific installation processes later in this document.
+
 ```
 scripts/build-wx3.2.4-modern-macosx.sh
 scripts/build-wxwidgets-cygwin-windows.sh
@@ -126,12 +132,18 @@ scripts/build-wxwidgets-gtk.sh
 ```
 After wxWidgets is installed to `/usr/local/wxsomething`, add `/usr/local/wxsomething/bin` to your path before running the LisaEm build script.
 
+Example:
+
+```
+$ export PATH=$PATH:/usr/local/wx3.2.5-cocoa-macOS-14.5-x86_64,arm64
+```
+
 ![building-wx-widgets](resources/1-clone-and-build-wx-widgets.gif)
 
 
 ## Compiling LisaEm (for all platforms):
 
-You will need wxWidgets 3.0.4-3.2.3 installed. Do not use system provided wxWidgets, but rather build your own using the scripts in the scripts directory as mentioned above.
+You will need wxWidgets 3.0.4-3.2.5 installed. Do not use system provided wxWidgets, but rather build your own using the scripts in the scripts directory as mentioned above.
 
 You will want to install/compile wxWidgets **without** the shared library option, except perhaps on GTK systems, but if you do this, it will not be portable except to systems of the same kind and version.
 
@@ -155,9 +167,9 @@ Compiling on MacOS X (or macOS) requires upstream wxWidgets (not system provided
 ```
 $ git clone https://github.com/arcanebyte/lisaem
 $ cd lisaem
-$ scripts/build-wx3.2.3-modern-macosx.sh --no-minimum-macos --enable-universal_binary=arm64,x86_64
+$ scripts/build-wx3.2.5-modern-macosx.sh --no-minimum-macos --enable-universal_binary=arm64,x86_64
 
-$ export PATH="/usr/local/wx3.2.3-cocoa-macOS-$(sw_vers -productVersion | cut -d. -f1-2)-x86_64,arm64/bin:$PATH"
+$ export PATH="/usr/local/wx3.2.5-cocoa-macOS-$(sw_vers -productVersion | cut -d. -f1-2)-x86_64,arm64/bin:$PATH"
 $ ./build.sh clean build
 $ sudo ./build.sh install 
 ```
@@ -167,8 +179,6 @@ The `LisaEm.app` application will be installed in the Applications folder.
 ### Cross compiling
 
 Cross compiling is possible by passing the -arch=xxx option to the top level build.sh script. This is how PPC binaries are built on an i386 10.5 VM.
-
-(Sadly I could not get a wxWidgets 3.x compiled properly for macos x 10.4 - this would have been nice due to the ability of 10.4 to run classic macos 9 and earlier applications, which would have made a nice environment for running many classic apps, including Lisa Office Systems. If you find a way to get wxWidgets 3.0.2 or 3.0.4 on 10.4 please let me know.)
 
 ### Compressing binaries with UPX
 
