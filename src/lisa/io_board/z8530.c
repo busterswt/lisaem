@@ -221,7 +221,7 @@ uint8 lisa_rb_Oxd200_sccz8530(uint32 address);
 void scc_control_loop(void);
 void dump_scc(void);
 
-char read_serial_port(unsigned int port);
+//char read_serial_port(unsigned int port); //(jamesdenton) This was declared twice (first in ~214)
 char read_serial_port_nothing(unsigned int port);
 char read_serial_port_imagewriter(unsigned int port);
 char read_serial_port_loopbackplug(unsigned int port);
@@ -260,8 +260,9 @@ void write_serial_port_pty(unsigned int port, char c) {}
 int poll_telnet_serial_read(int portnum) { return 0; }
 #endif
 
-void write_serial_port_terminal(int port, uint8 data);
-char read_serial_port_terminal(int port);
+//void write_serial_port_terminal(int port, uint8 data); //(jamesdenton) type mismatch between uint8 and char; need to address this
+void write_serial_port_terminal(unsigned int port, char data);
+char read_serial_port_terminal(unsigned int port);
 
 static inline void on_read_irq_handle(int port);
 
@@ -447,8 +448,9 @@ void scc_channel_reset_port(unsigned int port)
   scc_bits_per_char_mask[1] = 255;
 }
 
-extern char read_serial_port_terminal(int port);
-extern void write_serial_port_terminal(int port, uint8 data);
+extern char read_serial_port_terminal(unsigned int port);
+//extern void write_serial_port_terminal(int port, uint8 data); //(jamesdenton) type mismatch between uint8 and char; need to address this
+extern void write_serial_port_terminal(unsigned int port, char data);
 
 void read_port_if_ready_nothing(unsigned int port)
 {
