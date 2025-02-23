@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 
-# https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.2/wxWidgets-3.1.2.tar.bz2
+# This script downloads the wxWidgets-3.1.5.tar.bz2 source archive file from
+# https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.2/wxWidgets-3.1.5.tar.bz2
+# , extracts it into subfolder "wxWidgets-3.1.5",
+# then builds wxWidgets into subfolder "wxWidgets-3.1.5/build-msw",
+# then installs wxWidgets into folder "/usr/local/wx3.1.5-msw",
+# and finally cleans up by deleting subfolder "wxWidgets-3.1.5".
+# It does NOT need to be run as "sudo".
 
 # These are the expected paths for the mingw Cygwin package binaries.
-
 [[ -z "$AR"      ]] && export AR=/bin/x86_64-w64-mingw32-ar.exe
 [[ -z "$AS"      ]] && export AS=/bin/x86_64-w64-mingw32-as.exe
 [[ -z "$CPP"     ]] && export CPP=/bin/x86_64-w64-mingw32-cpp.exe
@@ -46,6 +51,9 @@ for VER in 3.1.5; do
                --with-libpng=builtin --with-libjpeg=builtin --with-libtiff=builtin --with-libxpm=builtin \
                --prefix=/usr/local/wx${VER}-${TYPE} \
   	     && make -j $( nproc ) && make -j $( nproc ) install || exit 2
-  echo export PATH=/usr/local/wx${VER}-${TYPE}/bin/:$PATH
-  wx-config --list
+
+  ln -s /usr/local/wx${VER}-${TYPE}/bin/wx-config /usr/local/bin/wx-config
+
+  # Test the installation, it should print e.g. "Default config is msw-unicode-static-3.1"
+  /usr/local/bin/wx-config --list
 done
