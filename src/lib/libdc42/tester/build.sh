@@ -121,14 +121,13 @@ for i in $@; do
 
  uninstall)
            if [[ -n "$DARWIN" ]]; then
-             echo Uninstall commands not yet implemented.
+             echo Uninstall commands not implemented.
              exit 1
            fi
 
            if [[ -n "$CYGWIN" ]]; then
-              [[ -n "$PREFIX" ]]    && echo Deleting $PREFIX    && rm -rf $PREFIX
-              [[ -n "$PREFIXLIB" ]] && echo Deleting $PREFIXLIB && rm -rf $PREFIXLIB
-              exit 0
+             echo Uninstall commands not implemented.
+             exit 1
            fi
 
            #Linux, etc.

@@ -9,20 +9,22 @@ SET PACKAGESDIR=C:\cygwin-packages
 
 ECHO This Windows batch script installs (or updates if already present) Cygwin into folder %ROOTDIR%, along with the necessary packages to build LisaEm. 
 ECHO In addition, folder "%PACKAGESDIR%" will be created; Cygwin stages its packages here. Do not delete it.
-ECHO Note: this script is just for convenience; you can do the same manually, from the Cygwin installer.
+ECHO Before running this script, please download the Cygwin installation file setup-x86_64.exe from https://cygwin.com/install.html and then run this script, specifying the file location, e.g.
+ECHO    %~nx0 Downloads\setup-x86_64.exe
+ECHO Note: this script is just for your convenience; you can do the same manually, by launching the Cygwin installer setup-x86_64.exe manually.
 ECHO Note: this script, and the Cygwin installer, DO NOT need to be run "As Administrator".
 ECHO Note: this script installs the 64-bit version of Cygwin, which requires a 64-bit CPU (anything after Pentium 4), and a 64-bit version of Windows. 
 ECHO Note: to uninstall Cygwin, just manually delete the two folders %ROOTDIR% and "%PACKAGESDIR%".
 
 :: Change to the directory of the executing batch file. Some installation log files will be created here.
 CD %~dp0
- 
+
 :: Check if a command-line argument was provided
 if "%~1"=="" (
     ECHO No path to file setup-x86_64.exe was provided on the command line.
-	ECHO Please download the Cygwin installation file setup-x86_64.exe from https://cygwin.com/install.html and re-run this script, specifying the file location, e.g.
+    ECHO Please download the Cygwin installation file setup-x86_64.exe from https://cygwin.com/install.html and re-run this script, specifying the file location, e.g.
     ECHO %~nx0 Downloads\setup-x86_64.exe
-	EXIT /b 1
+    EXIT /b 1
 )
 
 :: Store the path to file "setup-x86_64.exe" into INSTALLER_FILE_PATH
@@ -60,6 +62,6 @@ ECHO To start Cygwin, open a Windows command prompt and type: "%ROOTDIR%\cygwin"
 ECHO Note: to uninstall Cygwin, just manually delete the two folders %ROOTDIR% and "%PACKAGESDIR%".
 
 ENDLOCAL
- 
+
 PAUSE
 EXIT /B 0

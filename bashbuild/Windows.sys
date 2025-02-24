@@ -62,7 +62,7 @@ function getcpus()
 # Creates both static and shared libraries.
 #
 # Parameters $1 target directory
-#	     $2 library name
+#            $2 library name
 #            $3 version tripplet.  i.e. 0.3.6
 #            $4 mode "static", "shared", or "both"
 #            $5 is a single string containing objects to merge.
@@ -351,8 +351,8 @@ function CygwinSudoRebuild() {
   if [[ -z "$(/bin/id | grep Administrator)" ]]; then
 
      if [[ -z "$YESTOALL" ]]; then
-        echo "To install, we need start Cygwin Shell with Administrative capabilities." 1>&2
-        echo "Enter yes to start this build script in an Administrative shell or hit ENTER to abort" 1>&2
+        echo "To install, we need to start Cygwin Shell with Administrative capabilities." 1>&2
+        echo "Type yes and then ENTER to start this build script in an Administrative shell or, hit ENTER to abort" 1>&2
         [[ -z "$CYGWINYES" ]] && read x
      else
         x="$YESTOALL"
@@ -363,24 +363,25 @@ function CygwinSudoRebuild() {
           echo '#!/usr/bin/env bash'
           echo "cd \"${XTLD}\""
           echo "export PATH=\"$PATH\""
-	  echo "export HASPERMISSION=yes"
+          echo "export HASPERMISSION=yes"
+          echo "export WITHPKG=\"$WITHPKG\""
           echo "./build.sh $@"
           echo "echo Press ENTER to close Admin shell window"
           echo "read x"
         ) >"$file"
        chmod 755 "$file"
        cygstart -w --action=runas mintty.exe -w max -h -e /usr/bin/bash "$file"
-         cat "$file"
+       cat "$file"
        echo "Completed in Admin mintty window" 1>&2
        #rm "$file"
        exit 0
      else
-       export INSTALL=""
        echo "Skipping install" 1>&2
+       exit 0
      fi
   else
      export HASPERMISSION="yes"
-     echo "In Admin mode"
+     echo "Running in Windows Administrator mode. Press Enter to continue."
      read x
   fi
 }
@@ -431,15 +432,13 @@ export CXXFLAGS="${CXXFLAGS} ${GCCCOLORIZED} ${CCOPTS} -fno-rtti"
 export CLICMD="-mconsole"
 export GUIAPP="-mwindows"
 
-# installing on Windows goes to C:\Program Files\... rather than packaging which goes under ${XTLD}/pkg/build/tmp/
-for i in $@; do
-  [[ "$i" == "install" ]] && PRE="/cygdrive/c/"
-done
-for i in $@; do
-  [[ "$i" == "package" ]] && PRE=""
-done
-
 if [[ -z "$PREFIX" ]]; then
-   export PREFIX="/cygdrive/c/${PRE}Program Files/${COMPANY}/${SOFTWARE}"
-   export PREFIXLIB="${PRE}Program Files/${COMPANY}/${SOFTWARE}/lib"
+   # Note: these variables are set to the same values as in ../build.sh :
+   COMPANY="Sunder.NET"                # company (vendor for sun pkg)
+   SOFTWARE="LisaEm"                   # name of the software (can contain upper case)
+
+   export PREFIX="/cygdrive/c/Program Files/${COMPANY}/${SOFTWARE}"
+
+   # This var is unused when building on Windows, but we set it anyways, for consistency with other platforms:
+   export PREFIXLIB="/cygdrive/c/Program Files/${COMPANY}/${SOFTWARE}/lib"
 fi
