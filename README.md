@@ -91,43 +91,16 @@ Added a checkbox to disable mouse scaling under the display menu (if the mouse i
 If you see weird behavior on startup, try deleting both the main preferences as well as the specific Lisa preferences.
 
 ------------------------------------------------------------------------------
-## Special steps for Windows:
-
-If you wish to build for Windows, Cygwin, along with regular gcc and mingw is required.
-
-Please examine these two Cygwin installation batch files which will setup the appropriate packages.
-
-* `cygwin-install64.bat` - for 64 bit systems (all modern ones today)
-* `cygwin-install32.bat` - for older machines
-
-They expect to live on the E:\ drive - this is because I use Virtualbox VMs for windows where the C:\ drive is for the OS, D:\ is the CDROM drive, and E:\ is the shared folder between my Linux machine and the VM.
-
-You'll need to first download the Cygwin installers and name them as follows:
-
-* `e:\setup-x86_64.exe` - for the 64 bit Cygwin installer
-* `e:\setup-x86.exe` - for the 32 bit Cygwin install
-
-As you'll need to right click on the appropriate one (32 bit vs 64 bit) and run as Administrator, it's highly recommended that you carefully examine what they do.
-
-[The Cygwin installer requires that it be run as Administrator when scripted, otherwise it goes interactive and does not properly select the packages passed to it on the command line, this is a limitation of Cygwin, take it up with them by filing bug reports.]
-
-These scripts expect to be run from the E:\ drive, and that you've downloaded the Setup.exe for Cygwin and have named it properly as the script expects. 
-
-If your system doesn't or can't match this, please edit the install scripts as needed. 
-
-This is recommended anyway, since you shouldn't trust anything that requires running as Administrator. Don't trust me because I'm trust worthy, trust me because you've personally verified that these scripts don't do anything malicious to your system. This should apply to anything you install on any machine. If you can't see the source code and verify for yourself that it does the right thing, you shouldn't be installing it.
-
-Next, open the Cygwin terminal (MinTTY), use the scripts in the scripts directory that build wxWidgets, and then add the bin directory from the wxWidgets build to your PATH, and then build LisaEm - all these steps are done from the Cygwin terminal.
 
 ## Compiling wxWidgets for your system
 
-The scripts directory contains several scripts that you could use to build wxWidgets for your system. We will generally link LisaEm statically, especially for macOS.
+The scripts directory contains several scripts that you could use to build wxWidgets for your system. We will generally link LisaEm statically, especially for macOS and Windows.
 
 NOTE: Some of these scripts are referenced in OS-specific installation processes later in this document.
 
 ```
 scripts/build-wx3.2.4-modern-macosx.sh
-scripts/build-wxwidgets-cygwin-windows.sh
+scripts/build-wx3.1.5-cygwin-windows.sh
 scripts/build-wxwidgets-gtk.sh
 ```
 After wxWidgets is installed to `/usr/local/wxsomething`, add `/usr/local/wxsomething/bin` to your path before running the LisaEm build script.
@@ -140,25 +113,8 @@ $ export PATH=$PATH:/usr/local/wx3.2.5-cocoa-macOS-14.5-x86_64,arm64
 
 ![building-wx-widgets](resources/1-clone-and-build-wx-widgets.gif)
 
-
-## Compiling LisaEm (for all platforms):
-
-You will need wxWidgets 3.0.4-3.2.5 installed. Do not use system provided wxWidgets, but rather build your own using the scripts in the scripts directory as mentioned above.
-
-You will want to install/compile wxWidgets **without** the shared library option, except perhaps on GTK systems, but if you do this, it will not be portable except to systems of the same kind and version.
-
-Unlike most apps that use autotools, or cmake, LisaEm uses the [bashbuild](https://github.com/rayarachelian/bashbuild) system which was created as a side effect of developing LisaEm. There's a fake `./configure` and `Makefile` that are just wrappers around `bashbuild`.
-
-After installing/compiling wxWidgets, ensure that wx-config is in your path, cd to the LisaEm source code directly and run:
-
-	./build.sh clean build
-	sudo ./build.sh install 
-
-(Don't use sudo on Cygwin, instead type in `./build.sh install` and you'll be prompted whether you wish to launch the command in an Administration MinTTY session, then the build will run from a second terminal window that runs within the Administrator context.)
-
-This will install the lisaem and lisafsh-tool binaries to /usr/local/bin, and will install skins and sound files to /usr/local/share/LisaEm/; on Windows it will be installed to C:\Program Files\Sunder.Net\LisaEm (you may need to have launched Cygwin as admin to write to Program Files) and /Applications for macOS.
-
-![compiling lisaem](resources/2-build-lisaem.gif)
+## Compiling LisaEm (Windows)
+We have written detailed instructions [here](HowToBuildOnWindows.md).
 
 ## Compiling LisaEm (MacOS X)
 
@@ -176,15 +132,34 @@ $ sudo ./build.sh install
 
 The `LisaEm.app` application will be installed in the Applications folder.
 
-### Cross compiling
+## Compiling LisaEm (for all other platforms):
+
+You will need wxWidgets 3.0.4-3.2.5 installed. Do not use system provided wxWidgets, but rather build your own using the scripts in the scripts directory as mentioned above.
+
+You will want to install/compile wxWidgets **without** the shared library option, except perhaps on GTK systems, but if you do this, it will not be portable except to systems of the same kind and version.
+
+Unlike most apps that use autotools, or cmake, LisaEm uses the [bashbuild](https://github.com/rayarachelian/bashbuild) system which was created as a side effect of developing LisaEm. There's a fake `./configure` and `Makefile` that are just wrappers around `bashbuild`.
+
+After installing/compiling wxWidgets, ensure that wx-config is in your path, cd to the LisaEm source code directly and run:
+
+	```
+	./build.sh clean build
+	sudo ./build.sh install 
+	```
+
+This will install the lisaem and lisafsh-tool binaries to /usr/local/bin, and will install skins and sound files to /usr/local/share/LisaEm/; on Windows it will be installed to C:\Program Files\Sunder.Net\LisaEm and /Applications for macOS.
+
+![compiling lisaem](resources/2-build-lisaem.gif)
+
+## Cross compiling
 
 Cross compiling is possible by passing the -arch=xxx option to the top level build.sh script. This is how PPC binaries are built on an i386 10.5 VM.
 
-### Compressing binaries with UPX
+## Compressing binaries with UPX
 
 If your system has the upx command available, it will also compress the resulting binary with upx in order to save space, it's a good idea to install this command. (The upx step is disabled for debug-enabled builds as it interferes with gdb, and on certain older versions of macOS X such as 10.8, 10.9 where it's broken and causes segfaults in the resulting binaries.)
 
-### Statically linked wxWidgets
+## Statically linked wxWidgets
 
 On Windows and macOS x we'll also want a static build so we don't have to ship a copy of wxWidgets along with the app. Of course building for your own system doesn't require that, however the included scripts are setup to produce static libraries, except for Linux/GTK.
 
@@ -194,7 +169,7 @@ But you may find yourself needing to redo all this support infrastructure when a
 
 Native OS provided copies of wxWidgets, such as those packaged with various Linux distributions are likely not going to work as well with LisaEm, so your mileage may vary. If you experience issues with those, please use the appropriate script in the scripts directory for your system to compile wxWidgets (although as I write this, the wxWidgets 3.0 for GTK provided with Ubuntu 18.04 seems to function correctly.)
 
-### About macOS binary distributions
+## About macOS binary distributions
 
 Binary distributions of LisaEm for macOS X provided on `dmg` images, will include multiple binaries for multiple CPU architectures such as PPC, PPC64, i386, and x86-64. While the macOS x `lipo` command can glue multiple architecture binaries together, it cannot let you package up multiple copies of a single architecture. To get around this, I've added an internal selector script `lisaem.sh` in the resources directory which is copied to `LisaEm.app/Contents/MacOS/lisaem.sh` - this scripts looks at your system and figures out what macOS version and CPU architecture you're running and then attempts to find the most likely binary suitable for your machine and runs that one.
 
