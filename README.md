@@ -92,7 +92,10 @@ If you see weird behavior on startup, try deleting both the main preferences as 
 
 ------------------------------------------------------------------------------
 
-## Compiling wxWidgets for your system
+## Compiling LisaEm from sources
+
+### Compiling wxWidgets for your system
+LisaEm uses the wxWidgets library extensively. wxWidgets must be built and installed before building LisaEm from sources.
 
 The scripts directory contains several scripts that you could use to build wxWidgets for your system. We will generally link LisaEm statically, especially for macOS and Windows.
 
@@ -109,14 +112,17 @@ Example:
 
 ```
 $ export PATH=$PATH:/usr/local/wx3.2.5-cocoa-macOS-14.5-x86_64,arm64
+
+# verify that wxWidgets is available:
+wx-config --list
 ```
 
 ![building-wx-widgets](resources/1-clone-and-build-wx-widgets.gif)
 
-## Compiling LisaEm (Windows)
-We have written detailed instructions [here](HowToBuildOnWindows.md).
+### Compiling LisaEm (Windows)
+We have detailed instructions [here](HowToBuildOnWindows.md).
 
-## Compiling LisaEm (MacOS X)
+### Compiling LisaEm (MacOS X)
 
 Compiling on MacOS X (or macOS) requires upstream wxWidgets (not system provided). Use the included build scripts with the following directions:
 
@@ -132,7 +138,7 @@ $ sudo ./build.sh install
 
 The `LisaEm.app` application will be installed in the Applications folder.
 
-## Compiling LisaEm (for all other platforms):
+### Compiling LisaEm (for all other platforms):
 
 You will need wxWidgets 3.0.4-3.2.5 installed. Do not use system provided wxWidgets, but rather build your own using the scripts in the scripts directory as mentioned above.
 
@@ -151,15 +157,15 @@ This will install the lisaem and lisafsh-tool binaries to /usr/local/bin, and wi
 
 ![compiling lisaem](resources/2-build-lisaem.gif)
 
-## Cross compiling
+### Cross compiling
 
 Cross compiling is possible by passing the -arch=xxx option to the top level build.sh script. This is how PPC binaries are built on an i386 10.5 VM.
 
-## Compressing binaries with UPX
+### Compressing binaries with UPX
 
 If your system has the upx command available, it will also compress the resulting binary with upx in order to save space, it's a good idea to install this command. (The upx step is disabled for debug-enabled builds as it interferes with gdb, and on certain older versions of macOS X such as 10.8, 10.9 where it's broken and causes segfaults in the resulting binaries.)
 
-## Statically linked wxWidgets
+### Statically linked wxWidgets
 
 On Windows and macOS x we'll also want a static build so we don't have to ship a copy of wxWidgets along with the app. Of course building for your own system doesn't require that, however the included scripts are setup to produce static libraries, except for Linux/GTK.
 
@@ -169,7 +175,7 @@ But you may find yourself needing to redo all this support infrastructure when a
 
 Native OS provided copies of wxWidgets, such as those packaged with various Linux distributions are likely not going to work as well with LisaEm, so your mileage may vary. If you experience issues with those, please use the appropriate script in the scripts directory for your system to compile wxWidgets (although as I write this, the wxWidgets 3.0 for GTK provided with Ubuntu 18.04 seems to function correctly.)
 
-## About macOS binary distributions
+### About macOS binary distributions
 
 Binary distributions of LisaEm for macOS X provided on `dmg` images, will include multiple binaries for multiple CPU architectures such as PPC, PPC64, i386, and x86-64. While the macOS x `lipo` command can glue multiple architecture binaries together, it cannot let you package up multiple copies of a single architecture. To get around this, I've added an internal selector script `lisaem.sh` in the resources directory which is copied to `LisaEm.app/Contents/MacOS/lisaem.sh` - this scripts looks at your system and figures out what macOS version and CPU architecture you're running and then attempts to find the most likely binary suitable for your machine and runs that one.
 
