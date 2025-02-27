@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
 # This script downloads the wxWidgets-3.1.5.tar.bz2 source archive file from
-# https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.2/wxWidgets-3.1.5.tar.bz2
+# https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.5/wxWidgets-3.1.5.tar.bz2
 # , extracts it into subfolder "wxWidgets-3.1.5",
 # then builds wxWidgets into subfolder "wxWidgets-3.1.5/build-msw",
 # then installs wxWidgets into folder "/usr/local/wx3.1.5-msw",
 # and finally cleans up by deleting subfolder "wxWidgets-3.1.5".
-# It does NOT need to be run as "sudo".
+# Note: on a normal Linux installation, you will need to "sudo" in order to write to folder
+# /usr/local ; however, in Cygwin this is not a problem: you can write to any folder under "/".
 
 # These are the expected paths for the mingw Cygwin package binaries.
 [[ -z "$AR"      ]] && export AR=/bin/x86_64-w64-mingw32-ar.exe
@@ -26,8 +27,6 @@
 [[ -z "$STRIP"   ]] && export STRIP=/bin/x86_64-w64-mingw32-strip.exe
 [[ -z "$WINDMC"  ]] && export WINDMC=/bin/x86_64-w64-mingw32-windmc.exe
 [[ -z "$WINDRES" ]] && export WINDRES=/bin/x86_64-w64-mingw32-windres.exe
-
-export AROPTS="crD"
 
 for VER in 3.1.5; do
 #for VER in 3.0.2 3.0.4 3.1.0 3.1.1 3.1.2 3.1.3 3.1.4 3.1.5; do
