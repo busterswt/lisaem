@@ -93,6 +93,10 @@ This will compile and generate the LisaEm executable file `bin/lisaem.exe`, alon
 ## Running the LisaEm emulator
 Open Windows File Explorer and navigate to your installation folder (e.g. `C:\Program Files\Sunder.NET\LisaEm`) and double-click on LisaEm.exe to launch it.
 
+At first start, it will create the emulator "preferences" file `C:\Users\<Your Windows User>\AppData\Roaming\lisaem.conf`.
+This way, regardless of how / from where you've started the emulator, it will always find this config file.
+
 ## Uninstalling LisaEm
 To reduce the risk of deleting "too much" by mistake, we have not implemented a "build uninstall" command.
 So, to uninstall LisaEm, just manually delete the folder where it is installed.
+You may also want to delete the emulator "preferences" file `C:\Users\<Your Windows User>\AppData\Roaming\lisaem.conf`.
