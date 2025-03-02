@@ -132,18 +132,18 @@ function CLEAN() {
             CLEANARTIFACTS "*.o" "*.a" "*.so" "*.dylib" "*.exe" get-uintX-types "cpu68k-?.c" def68k gen68k hashes.txt "slot.*.sh" build-warnings.txt windres_private.res
             subbuild src/lib/libGenerator --no-banner clean
 
-	    # TerminalWx isn't something I intend to develop, but rather just use, so disable its warnings
-	    export OWARNINGS="$WARNINGS"
-	    export OCFLAGS="$CFLAGS"
-	    export OCPPFLAGS="$CPPFLAGS"
-	    export OCXXFLAGS="$CXXFLAGS"
+            # TerminalWx isn't something I intend to develop, but rather just use, so disable its warnings
+            export OWARNINGS="$WARNINGS"
+            export OCFLAGS="$CFLAGS"
+            export OCPPFLAGS="$CPPFLAGS"
+            export OCXXFLAGS="$CXXFLAGS"
 
             subbuild src/lib/TerminalWx   --no-banner clean
 
-	    export CFLAGS="$OCFLAGS"
-	    export CPPFLAGS="$OCPPFLAGS"
-	    export CXXFLAGS="$OCXXFLAGS"
-	    unset  OWARNINGS OCFLAGS OCPPFLAGS OCXXFLAGS
+            export CFLAGS="$OCFLAGS"
+            export CPPFLAGS="$OCPPFLAGS"
+            export CXXFLAGS="$OCXXFLAGS"
+            unset  OWARNINGS OCFLAGS OCPPFLAGS OCXXFLAGS
 
             subbuild src/lib/libdc42      --no-banner clean
             subbuild src/tools            --no-banner clean
@@ -245,14 +245,23 @@ for j in $@; do
   --pkg-prefix=*) export PKGPREFIX="${i:9}" ;;
 
 
-  pkg|package)  if ! is_pkg_available; then
-                    echo "This is only implemented on macos, Windows 10, Linux, Open/FreeBSD, and OpenIndiana currently" 1>&2
+  pkg|package)  
+                # The "package" command sets INSTALL=1, WITHPKG="yes" for supported platforms, 
+                # which invokes the "install" codepath, with the target folder set to "lisaem/pkg/build/tmp".
+                # The WITHPKG="yes" triggers an extra step that packages the files in that folder.
+                # The "install" code for Windows requires Admininstative privileges, to write into "C:\Program Files\...".
+                # Even though "package" does not need Admininstative privileges, it is hard to enable/enforce that check
+                # only for "install" and not for "package". 
+                # TO DO: Rewrite the "package" command, to be completely separate from "install"; the code will be much cleaner.
+                if ! is_pkg_available; then
+                    echo "This is only implemented on macos, Windows, Linux, FreeBSD, and OpenIndiana currently" 1>&2
                     exit 1
                 fi
 
+                # Sets INSTALL=1 for platforms that support packaging:
                 do_fake_install_for_pkg
                 export WITHPKG="yes"
-                AskCygWinSudo
+                package_check_sudo_pass
                 ;;
 
   install)  install_check_sudo_pass
@@ -265,8 +274,7 @@ for j in $@; do
             fi
 
             if  [[ -n "$CYGWIN"    ]]; then
-                [[ -n "$PREFIX"    ]] && echo Deleting $PREFIX    && rm -rf $PREFIX
-                [[ -n "$PREFIXLIB" ]] && echo Deleting $PREFIXLIB && rm -rf $PREFIXLIB
+                echo "Uninstall command is not implemented on Windows. To uninstall LisaEm, please manually delete folder C:\Program Files\\${COMPANY}\\${SOFTWARE}."
                 exit 0
             fi
 
@@ -950,8 +958,8 @@ if  [[ -f "$LISANAME" ]]; then
       if [[ -n "$INSTALL" ]]; then
   
         if [[ -n "$CYGWIN" ]]; then
-              # PREFIX+PREFIXLIB will go to: "/cygdrive/c/Program Files/${COMPANY}/${SOFTWARE}"
-              # these are set in the bashbuild {OS}.sys file
+              # PREFIX will go to: "/cygdrive/c/Program Files/${COMPANY}/${SOFTWARE}"
+              # it is set in the bashbuild/Windows.sys file
               ACTION="Installing"
 
               if  [[ -n "$WITHPKG" ]]; then
@@ -959,14 +967,15 @@ if  [[ -f "$LISANAME" ]]; then
                   ACTION="Packaging"
               fi
 
-              echo "* ${ACTION} skins in $PREFIXLIB/${SOFTWARE}"
-              mkdir -pm755 "$PREFIX"
-              (cd "${XTLD}/resources"; tar cpf - skins) | (cd "$PREFIX"; tar xpf - )
-              echo "* ${ACTION} lisaem.exe and tools binaries in $PREFIX"
-              mkdir "${PREFIX}/bin"
+              echo "Creating folder ${PREFIX}"
+              mkdir -pm755 "${PREFIX}"
+              echo "* ${ACTION} skins into ${PREFIX}"
+              cp -r "${XTLD}/resources/skins" "${PREFIX}"			  
+              echo "* ${ACTION} lisaem.exe and tools binaries into ${PREFIX}"
+              mkdir -pm755 "${PREFIX}/bin"
               cp "${XTLD}/bin/"*.exe "${PREFIX}/bin"
-              mv "${PREFIX}/bin/lisaem.exe" "$PREFIX"
-              echo -n "  Done ${ACTION} to ${PREFIX}"
+              mv "${PREFIX}/bin/lisaem.exe" "${PREFIX}"
+              echo "  Done ${ACTION} to ${PREFIX}"
 
               create_packages_for_os
 
@@ -1029,7 +1038,7 @@ if  [[ -f "$LISANAME" ]]; then
       else # debug under cygwin
         cp lisaem.exe "/cygdrive/c/Program Files/${COMPANY}/${SOFTWARE}" || exit 1
         cd ../resources
-        tar cpf - skins | ( cd "/cygdrive/c/Program Files/${COMPANY}/${SOFTWARE}"; tar xpf - )
+        cp -r "skins" "${PREFIX}"
         cd "/cygdrive/c/Program Files/${COMPANY}/${SOFTWARE}" || exit 1
         echo "run -p" >gdb-run
         $GDB ./lisaem.exe -x gdb-run
