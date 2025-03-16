@@ -33,11 +33,11 @@ fi
      SOFTWARE="LisaEm"                    # name of the software (can contain upper case)
        LCNAME="lisaem"                    # lower case name used for the directory
   DESCRIPTION="The first fully functional Lisa Emulator™"   # description of the package
-          VER="1.2.7"                     # just the version number
+          VER="1.2.8"                     # just the version number
     STABILITY="RC5"                       # DEVELOP, ALPHA, BETA, RC1, RC2, RC3... 
                                           # RELEASE/PRODUCTION - PRE-* keep short
                                           # snapcraft limits the length of the version
-  RELEASEDATE="2024.07.28"                # release date.  must be YYYY.MM.DD
+  RELEASEDATE="2025.03.15"                # release date.  must be YYYY.MM.DD
        AUTHOR="Friends of Ray Arachelian" # name of the author
     AUTHEMAIL="lisaem@arcanebyte.com"     # email address for this software
       COMPANY="Sunder.NET"                # company (vendor for sun pkg)
