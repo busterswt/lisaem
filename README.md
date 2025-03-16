@@ -49,10 +49,11 @@ The following table outlines successful builds against the respective operating 
 
 | OS | Arch | wxWidgets | Status |
 |---|---|---|---|
-| MacOS 13.4.1 | arm64 | 3.2.3 | Tested - OK |
-| MacOS 13.6 | x86_64 | 3.2.3 | Tested - OK |
+| macOS 13.4.1 | arm64 | 3.2.3 | Tested - OK |
+| macOS 13.6 | x86_64 | 3.2.3 | Tested - OK |
 | macOS 14.0 | arm64 | 3.2.4 | Tested - OK |
-| MacOS 14.5 | arm64 | 3.2.5 | Tested - OK |
+| macOS 14.5 | arm64 | 3.2.5 | Tested - OK |
+| macOS 15.1.1 | arm64 | 3.2.6 | Tested - OK |
 | Windows 10 | x86_64 | N/A | Untested |
 | Ubuntu 22.04 | x86_64 | N/A | Untested |
 
@@ -75,6 +76,11 @@ Below is a table of recently tested emulated operating systems. If you've succes
 | Microsoft Xenix | Untested | |
 | UniSoft UniPlus Unix V | Untested | |
 | Lisa Workshop | Untested | |
+
+## 2025.03.15
+
+Due to wxWidgets limitations, the minimum macOS version for the latest LisaEm release has been hardcoded to macOS 14.5. If an older macOS release is
+required, please file an issue.
 
 ## 2021.01.15
 
@@ -102,7 +108,7 @@ The scripts directory contains several scripts that you could use to build wxWid
 NOTE: Some of these scripts are referenced in OS-specific installation processes later in this document.
 
 ```
-scripts/build-wx3.2.4-modern-macosx.sh
+scripts/build-wx3.2.6-modern-macosx.sh
 scripts/build-wx3.1.5-cygwin-windows.sh
 scripts/build-wxwidgets-gtk.sh
 ```
@@ -111,7 +117,7 @@ After wxWidgets is installed to `/usr/local/wxsomething`, add `/usr/local/wxsome
 Example:
 
 ```
-$ export PATH=$PATH:/usr/local/wx3.2.5-cocoa-macOS-14.5-x86_64,arm64
+$ export PATH=$PATH:/usr/local/wx3.2.6-cocoa-macOS-15.1-x86_64,arm64
 
 # verify that wxWidgets is available:
 wx-config --list
@@ -129,9 +135,9 @@ Compiling on MacOS X (or macOS) requires upstream wxWidgets (not system provided
 ```
 $ git clone https://github.com/arcanebyte/lisaem
 $ cd lisaem
-$ scripts/build-wx3.2.5-modern-macosx.sh --no-minimum-macos --enable-universal_binary=arm64,x86_64
+$ scripts/build-wx3.2.6-modern-macosx.sh --enable-universal_binary=arm64,x86_64
 
-$ export PATH="/usr/local/wx3.2.5-cocoa-macOS-$(sw_vers -productVersion | cut -d. -f1-2)-x86_64,arm64/bin:$PATH"
+$ export PATH="/usr/local/wx3.2.6-cocoa-macOS-$(sw_vers -productVersion | cut -d. -f1-2)-x86_64,arm64/bin:$PATH"
 $ ./build.sh clean build
 $ sudo ./build.sh install 
 ```
