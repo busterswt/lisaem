@@ -28,7 +28,7 @@ function do_fake_install_for_pkg() {
 # which triggers the "install" command, where the target folder will be set to
 # "lisaem/pkg/build/tmp"
 function package_check_sudo_pass() {
-  if  [[ -n "$CYGWIN" ]] then
+  if  [[ -n "$CYGWIN" ]]; then
        export INSTALL=1
        export WITHPKG="yes"
        CygwinSudoRebuild install
