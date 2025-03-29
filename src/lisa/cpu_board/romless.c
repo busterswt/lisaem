@@ -78,8 +78,7 @@ extern char *los_error_code(signed long loserror);
 #define FLOP_STAT_NOSPED 0x1B  // Unable to adjust speed
 #define FLOP_STAT_NWCALB 0x1c  // Unable to write calibration
 
-extern DC42ImageType Floppy_u, // in floppy.c, slightly cheating here.
-    Floppy_l;
+extern DC42ImageType current_floppy_image; // in floppy.c, slightly cheating here.
 
 extern long deinterleave5(long sector);
 
@@ -908,7 +907,7 @@ void romless_twgread(void)
   sector = (reg68k_regs[1] >> 8) & 0xff;
   track = (reg68k_regs[1]) & 0xff;
 
-  F = ((drive & 0x80) ? &Floppy_u : &Floppy_l);
+  F = &current_floppy_image;
   if (!F)
   {
     reg68k_regs[0] = FLOP_STAT_INVSEC;

@@ -1,0 +1,10 @@
+{
+	"folders": [
+		{
+			"path": "src"
+		}
+	],
+	"settings": {
+		"editor.tabSize": 4
+	}
+}

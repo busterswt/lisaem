@@ -122,7 +122,7 @@ typedef struct // floppy type
 
    uint8 mmappedio; // 0 if disabled, 1 if enabled.
 
-   uint8 ftype; // floppy type 0=twig, 1=sony400k, 2=sony800k, 3=freeform, 254/255=disabled
+   uint8 ftype; // floppy type 0=twiggy, 1=sony400k, 2=sony800k, 3=freeform, 254/255=disabled
 
    uint32 tagsize;  // must set to 12 - expect ProFile/Widget to use 24 byte tags
    uint32 datasize; // must set to 512
@@ -414,7 +414,8 @@ int dc42_check_checksums(DC42ImageType *F) // 0 if they match, 1 if tags, 2 if d
    uint32 newdatachks = 0;
    uint32 datachks;
    uint32 tagchks;
-   DC42_CHECK_VALID_F(F)
+   if (F!=NULL)
+      DC42_CHECK_VALID_F(F)
 
    newtagchks = dc42_calc_tag_checksum(F);   // calculate the current tag checksum
    newdatachks = dc42_calc_data_checksum(F); // calculate the current sector data checksum
@@ -997,6 +998,12 @@ int dc42_open(DC42ImageType *F, char *filename, char *options)
       DC42_RET_CODE(F, 88, "DC42 volume name size wrong, or version not 0100", return F->retval);
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+   // 0x00 = sony400k; 0x01 = sony800k; 0x54 = twiggy
+   uint8 disk_encoding = tempbuf[0x50]; // at offset 0x50 from the start of the file (part of the header)
+
+   // 0x01 = twiggy; 0x02 = sony400k; 0x22 = sony800k
+   uint8 disk_format = tempbuf[0x51]; // at offset 0x51 from the start of the file (part of the header)
+
    F->sectoroffset = DC42_HEADERSIZE; // data starts from byte 84 and continues on in 512 byte chunx
 
    F->datasizetotal = (tempbuf[64 + 0] << 24) | (tempbuf[64 + 1] << 16) | (tempbuf[64 + 2] << 8) | tempbuf[64 + 3];
@@ -1019,26 +1026,33 @@ int dc42_open(DC42ImageType *F, char *filename, char *options)
    // tags start right after sector data
    F->tagstart = F->sectoroffset + (F->numblocks * F->sectorsize);
 
-   if (F->numblocks == 800)
+   fprintf(stderr,"libdc42: Disk image numblocks=%d\n", F->numblocks);
+   if (disk_encoding==0x54 || disk_format==0x01 || F->numblocks == 1702) 
+   {
+      F->maxtrk = 45;
+      F->maxsec = 22;
+      F->maxside = 1;
+      F->ftype = TWIG860KFLOPPY;
+   } else if (disk_encoding==0x01 || disk_format==0x22 ||  F->numblocks == 1600)
+   {
+         F->maxtrk = 80;
+         F->maxsec = 15;
+         F->maxside = 2;
+         F->ftype = SONY800KFLOPPY;
+   } else if (disk_encoding==0x00 || disk_format==0x02 || F->numblocks == 800)
    {
       F->maxtrk = 80;
       F->maxsec = 15;
       F->maxside = 1;
       F->ftype = SONY400KFLOPPY;
-   }
-   if (F->numblocks == 1600)
+   } else 
    {
+      // Pretend to be a SONY400KFLOPPY:
+      // To do: the numblocks value is neither of the above; perhaps we need to set the values below to safe values that are smaller than numblocks?
       F->maxtrk = 80;
       F->maxsec = 15;
-      F->maxside = 2;
-      F->ftype = SONY800KFLOPPY;
-   }
-   if (F->numblocks == 1720)
-   {
-      F->maxtrk = 46;
-      F->maxsec = 24;
-      F->maxside = 2;
-      F->ftype = TWIG860KFLOPPY;
+      F->maxside = 1;
+      F->ftype = SONY400KFLOPPY;
    }
 
    F->size = F->sectoroffset + (F->numblocks * (F->sectorsize + F->tagsize));
@@ -1241,6 +1255,12 @@ int dc42_open_by_handle(DC42ImageType *F, int fd, FILE *fh, long seekstart, char
       DC42_RET_CODE(F, 88, "DC42 volume name size wrong, or version not 0100", return F->retval);
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+   // 0x00 = sony400k; 0x01 = sony800k; 0x54 = twiggy
+   uint8 disk_encoding = tempbuf[0x50]; // at offset 0x50 from the start of the file (part of the header)
+
+   // 0x01 = twiggy; 0x02 = sony400k; 0x22 = sony800k
+   uint8 disk_format = tempbuf[0x51]; // at offset 0x51 from the start of the file (part of the header)
+
    F->sectoroffset = DC42_HEADERSIZE; // data starts from byte 84 and continues on in 512 byte chunx
 
    F->datasizetotal = (tempbuf[64 + 0] << 24) | (tempbuf[64 + 1] << 16) | (tempbuf[64 + 2] << 8) | tempbuf[64 + 3];
@@ -1265,26 +1285,33 @@ int dc42_open_by_handle(DC42ImageType *F, int fd, FILE *fh, long seekstart, char
    // tags start right after sector data
    F->tagstart = F->sectoroffset + (F->numblocks * F->sectorsize);
 
-   if (F->numblocks == 800)
+   fprintf(stderr,"libdc42: Disk image numblocks=%d\n", F->numblocks);
+   if (disk_encoding==0x54 || disk_format==0x01 || F->numblocks == 1702) 
+   {
+      F->maxtrk = 45;
+      F->maxsec = 22;
+      F->maxside = 1;
+      F->ftype = TWIG860KFLOPPY;
+   } else if (disk_encoding==0x01 || disk_format==0x22 ||  F->numblocks == 1600)
+   {
+         F->maxtrk = 80;
+         F->maxsec = 15;
+         F->maxside = 2;
+         F->ftype = SONY800KFLOPPY;
+   } else if (disk_encoding==0x00 || disk_format==0x02 || F->numblocks == 800)
    {
       F->maxtrk = 80;
       F->maxsec = 15;
       F->maxside = 1;
       F->ftype = SONY400KFLOPPY;
-   }
-   if (F->numblocks == 1600)
+   } else 
    {
+      // Pretend to be a SONY400KFLOPPY:
+      // To do: the numblocks value is neither of the above; perhaps we need to set the values below to safe values that are smaller than numblocks?
       F->maxtrk = 80;
       F->maxsec = 15;
-      F->maxside = 2;
-      F->ftype = SONY800KFLOPPY;
-   }
-   if (F->numblocks == 1720)
-   {
-      F->maxtrk = 46;
-      F->maxsec = 24;
-      F->maxside = 2;
-      F->ftype = TWIG860KFLOPPY;
+      F->maxside = 1;
+      F->ftype = SONY400KFLOPPY;
    }
 
    F->size = F->sectoroffset + (F->numblocks * (F->sectorsize + F->tagsize));
@@ -2235,11 +2262,11 @@ static void Error(char *message)
 /* LZSS Parameters */
 
 #define N 4096 // was 4096    /* Size of string buffer */
-#define F 60   // was 60  /* Size of look-ahead buffer */
+#define LOOK_AHEAD 60   // was 60  /* Size of look-ahead buffer */
 #define THRESHOLD 2
 #define NIL N /* End of tree's node  */
 
-static uint8 text_buf[N + F - 1];
+static uint8 text_buf[N + LOOK_AHEAD - 1];
 static int16 match_position, match_length, lson[N + 1], rson[N + 257], dad[N + 1];
 
 // RA20060915
@@ -2293,7 +2320,7 @@ static void InsertNode(int16 r) /* Inserting node to the tree */
             return;
          }
       }
-      for (i = 1; i < F; i++)
+      for (i = 1; i < LOOK_AHEAD; i++)
          if ((cmp = key[i] - text_buf[p + i]) != 0)
             break;
       if (i > THRESHOLD)
@@ -2301,7 +2328,7 @@ static void InsertNode(int16 r) /* Inserting node to the tree */
          if (i > match_length)
          {
             match_position = ((r - p) & (N - 1)) - 1;
-            if ((match_length = i) >= F)
+            if ((match_length = i) >= LOOK_AHEAD)
                break;
          }
          if (i == match_length)
@@ -2362,7 +2389,7 @@ static void DeleteNode(int16 p) /* Deleting node from the tree */
 
 /* Huffman coding parameters */
 
-#define N_CHAR (256 - THRESHOLD + F)
+#define N_CHAR (256 - THRESHOLD + LOOK_AHEAD)
 /* character code (= 0..N_CHAR-1) */
 #define T (N_CHAR * 2 - 1) /* Size of table */
 #define R (T - 1)          /* root position */
@@ -3218,13 +3245,13 @@ static void Encode(void) /* Encoding/Compressing */
    StartHuff();
    InitTree();
    s = 0;
-   r = N - F;
+   r = N - LOOK_AHEAD;
    for (i = s; i < r; i++)
       text_buf[i] = ' ';
-   for (len = 0; len < F && (c = getc(infile)) != EOF; len++)
+   for (len = 0; len < LOOK_AHEAD && (c = getc(infile)) != EOF; len++)
       text_buf[r + len] = c;
    textsize = len;
-   for (i = 1; i <= F; i++)
+   for (i = 1; i <= LOOK_AHEAD; i++)
       InsertNode(r - i);
    InsertNode(r);
    do
@@ -3248,7 +3275,7 @@ static void Encode(void) /* Encoding/Compressing */
       {
          DeleteNode(s);
          text_buf[s] = c;
-         if (s < F - 1)
+         if (s < LOOK_AHEAD - 1)
             text_buf[s + N] = c;
          s = (s + 1) & (N - 1);
          r = (r + 1) & (N - 1);
@@ -3363,9 +3390,9 @@ int LZHExpandBlock(uint8 *in, uint8 *out, int16 size, int sector)
 
    // StartHuff();   //RA20060915 - speedup hack
    restore_huff();
-   for (i = 0; i < N - F; i++)
+   for (i = 0; i < N - LOOK_AHEAD; i++)
       text_buf[i] = ' ';
-   r = N - F;
+   r = N - LOOK_AHEAD;
    for (count = 0; count < textsize;)
    {
       c = DecodeChar();
