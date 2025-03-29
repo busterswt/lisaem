@@ -259,6 +259,11 @@ extern "C" void force_refresh(void);
 
 extern "C" void iw_enddocuments(void);
 
+// defined in in floppy.c:
+extern uint32 total_num_sectors_read;
+extern uint32 total_num_sectors_written; 
+extern uint8 emulated_drive_number;
+
 void iw_check_finish_job(void);
 
 void turn_skins_on(void);
@@ -1795,7 +1800,7 @@ void LisaEmFrame::Update_Status(long elapsed,long idleentry)
       s = "MHz";
     }
 
-    text.Printf(_T("CPU: %1.2f%s want:%1.2fMHz tick:%d, video refresh:%1.2f%s %c contrast:%02x %s %x%x:%x%x:%x%x.%x @%d/%08x clk_cycles:%lld"),
+    text.Printf(_T("CPU: %1.2f%s want:%1.2fMHz tick:%d, video refresh:%1.2f%s %c contrast:%02x %s %x%x:%x%x:%x%x.%x @%d/%08x clk_cycles:%lld %sSectors_R/W:%d/%d"),
                 mhzactual, c, throttle, emulation_tick,
                 vidhz, s, (videoramdirty ? 'd' : ' '),
                 contrast,
@@ -1804,7 +1809,9 @@ void LisaEmFrame::Update_Status(long elapsed,long idleentry)
                 lisa_clock.mins_h, lisa_clock.mins_l,
                 lisa_clock.secs_h, lisa_clock.secs_l,
                 lisa_clock.tenths,
-                context, pc24, cpu68k_clocks);
+                context, pc24, cpu68k_clocks,
+                (emulated_drive_number==0x00)? "TwiggyFloppy":"SonyFloppy",
+                total_num_sectors_read, total_num_sectors_written);
 
     SetStatusBarText(text);
     screen_paint_update = 0;
