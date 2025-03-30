@@ -235,8 +235,17 @@ uint8 via2_irb(void);
 void via2_ora(uint8 data, uint8 regnum);
 void via2_orb(uint8 data);
 
-// VIA Wrapper around ProFile loop to handle BSY (CA1) IRQ's -- if they're enabled that is.
-void VIAProfileLoop(int vianum, ProFileType *P, int event)
+/**
+ * TorZidan@: this code is currenty unused, in favor of VIAProfileLoop() further down.
+ * This code was used in releases RC5-2025.03.15, RC5-2024.07.28 and perhaps in few older ones.
+ * It has few known bugs:
+ * - When Installing Lisa Office System 1.0 from floppies, Lisa cannot find a ProFile drive.
+ * - When installing Lisa Office System 2.0 from floppies, Lisa cannot write to the ProFile drive.
+ * - Same when installing Pascal Worksop from floppies, see https://github.com/arcanebyte/lisaem/issues/4 
+ * It turned out that the older verson of the code (found in release 1.2.6) works well,
+ * and that's what we are using further down.
+ * I decided to keep this here, for posterity. 
+void VIAProfileLoop_unused(int vianum, ProFileType *P, int event)
 {
     if (event < 0)
         return;
@@ -266,29 +275,40 @@ void VIAProfileLoop(int vianum, ProFileType *P, int event)
             return;
         }
     }
-    /*
-          //- not sure which is right. 1=positive edge, 0=negative edge, I think the logical XOR
-          //if ( (P->BSYLine!=0) && ((via[vianum].via[PCR] & 1)!=0) )   via[vianum].via[IFR] |=VIA_IRQ_BIT_CA1;  //2021.03.19 turned this back on.
+}
+*/
 
-            DEBUG_LOG(0,"oldbsy:%d newbsy:%d PCR_bit0:%d   tag:profile.c",BSY,P->BSYLine,via[vianum].via[PCR]);
+// VIA Wrapper around ProFile loop to handle BSY (CA1) IRQ's -- if they're enabled that is.
+void VIAProfileLoop(int vianum, ProFileType *P, int event)
+{
+    int BSY=P->BSYLine;
+    //    if (via[2].ProFile->DENLine!=0) return;
+    ProfileLoop(P,event);
 
-            if ((P->BSYLine!=0) ^  ((via[vianum].via[PCR] & 1)!=0) )
-                    {
-                        via[vianum].via[IFR] |=VIA_IRQ_BIT_CA1;
+    // IF BSY has changed, and CA1 IRQ's are enabled, then, see if we need to send an IRQ based on polarity in PCR CA1 bit
+    if (P->BSYLine !=BSY)
+    {
+        //- not sure which is right. 1=positive edge, 0=negative edge, I think the logical XOR
+        //if (P->BSYLine!=0) && ((via[vianum].via[PCR] & 1)!=0) )   via[vianum].via[IFR] |=VIA_IRQ_BIT_CA1;
 
-                        DEBUG_LOG(0,"state:%d Enabled CA1(BSY) on %d->%d BSY transition pcr:%d pc24:%08x tag:profile.c",
-                                  P->StateMachineStep,BSY,P->BSYLine,
-                                  (via[vianum].via[PCR] & 1), pc24);
-                    }
-            else
+        DEBUG_LOG(0,"oldbsy:%d newbsy:%d PCR_bit0:%d   tag:profile.c",BSY,P->BSYLine,via[vianum].via[PCR]);
 
-                    {
-                        DEBUG_LOG(0,"state:%d Didn't enable CA1(BSY) on %d->%d BSY transition pcr:%d pc24:%08x tag:profile.c",
-                                  P->StateMachineStep,BSY,P->BSYLine,
-                                  (via[vianum].via[PCR] & 1), pc24);
-                    }
-            // too bad we don't have a ^^ operator like we do && and || - logical XOR would be nice here.
-    */
+        if ((P->BSYLine!=0) ^  ((via[vianum].via[PCR] & 1)!=0) )
+            {
+                via[vianum].via[IFR] |=VIA_IRQ_BIT_CA1;
+
+                DEBUG_LOG(0,"state:%d Enabled CA1(BSY) on %d->%d BSY transition pcr:%d pc24:%08x tag:profile.c",
+                    P->StateMachineStep,BSY,P->BSYLine,
+                    (via[vianum].via[PCR] & 1), pc24);
+            }
+        else
+            {
+                DEBUG_LOG(0,"state:%d Didn't enable CA1(BSY) on %d->%d BSY transition pcr:%d pc24:%08x tag:profile.c",
+                    P->StateMachineStep,BSY,P->BSYLine,
+                    (via[vianum].via[PCR] & 1), pc24);
+            }
+        // too bad we don't have a ^^ operator like we do && and || - logical XOR would be nice here.
+    }
 }
 
 /***********************************************************************************\
