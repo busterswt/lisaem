@@ -96,18 +96,12 @@ static int16 turn_logging_on_sector = -1, turn_logging_on_write = -1;
 #define CURRENT_TRACK_GRP 0x23
 #define DRIVE_EXISTS 0x23
 
-// Note: address 0x2c is also used, e.g: floppy_ram[0x2e] = floppy_ram[0x2f] & floppy_ram[0x2c];
-
-// these are wrong 5F is interrupt status!!
-// INT_MASK was off!  0x2d is wrong, but 2c is off!
-#define FLOP_INT_MASK 0x2d
-//*** THIS IS WRONG! 2c is retry count, not drive enabled - changing it to 0x2d which is also wrong, but prevents conflicts
-#define DRIVE_ENABLED 0x2d
-#define FLOP_INT_STAT 0x2f
+// Note(TorZidan@): There was confusion in the previous code about at which address is the "interrupt mask" byte.
+// Both 0x2c and 0x2d were used in the code. I switched all code to use FLOP_INT_MASK=0x2d. Time will tell if this works well.
+#define FLOP_INT_MASK 0x2d    // interrupt mask
+// Note: address 0x2e is also used, e.g: floppy_ram[0x2e] = floppy_ram[FLOP_INT_MASK] & floppy_ram[FLOP_INT_STAT]
+#define FLOP_INT_STAT 0x2f    // interrupt status
 // #define FLOP_INT_STATUS 0xFCC05F
-#define INTSTAT (0x5f >> 1)   // interrupt status == 2f
-#define INTSTATUS (0x5f >> 1) // interrupt status ==2f
-// fcc05d=pending IRQ's?
 
 #define FLOP_STAT_INVCMD 0x01 // invalid command
 #define FLOP_STAT_INVDRV 0x02 // invalid drive
@@ -153,32 +147,33 @@ static int16 turn_logging_on_sector = -1, turn_logging_on_write = -1;
 
 #define NOFLOPPY -1
 #define GENERICIMAGE 3
+
+// Possible values at floppy_ram[TYPE] = $FCC015  = drive type:
 #define SONY800KFLOPPY 2
 #define SONY400KFLOPPY 1
 #define TWIGGYFLOPPY 0
+
 #define FLOPPY_ROM_VERSION 0xa8 // want a8 here normally
 
 // I/O Control Block, see https://lisa.sunder.net/LisaHardwareManual1983.pdf#page=201
 #define GOBYTE (0)   // gobyte     1
 #define COMMAND (0)  // gobyte     1              // synonym
-#define FUNCTION (1) // function   at FCC003 : 00=Read, 01=Write, 02=Unclamp/eject, ... see them further down.
-#define DRIVE (2)    // drive      at FCCOOS             // 00=lower Drive 2, 80=upper Drive 1
-#define SIDE (3)     // side       at FCC007 : 0=top, 1=bottom
-#define SECTOR (4)   // sector     at FCC009
-#define TRACK (5)    // track      at FCCOOB
-#define SPEED (6)    // rotation speed at FCCOOB : 0=normal, DA is fast
-#define CONFIRM (7)  // format confirm at at FCCOOB
-#define STATUS (8)   // at FCCO11
-// #define INTERLEAVE (9) // sector interleave
-#define TYPE (9)     // at FCCO13: dsk ID, aka drive type id: 0-twiggy, 1-sony400k, 2-double sony400k
-// $FCC015 - DRVTYPE...
-#define TWIGGY_TYPE 0
-#define SONY400_TYPE 1
-#define SONY800_TYPE 2
+#define FUNCTION (1) // function   3
+#define DRIVE (2)    // drive      5              // 00=lower, 80=upper
+#define SIDE (3)     // side       7
+#define SECTOR (4)   // sector     9
+#define TRACK (5)    // track      b
+#define SPEED (6)    // rotation speed 0=normal, DA is fast
+#define CONFIRM (7)  // format confirm
+#define STATUS (8)
+#define INTERLEAVE (9) // sector interleave
+#define TYPE (0xA)     // drive type id 0-twig, 1-sony, 2-double sony
 
 #define STST (0xB)    // rom controller self test status
 #define ROMVER (0x18) // ROM Version
 // above are correct, not sure about below
+
+// fcc05d=pending IRQ's?
 
 // These are unused.
 //#define LISATYPE 0x0018
@@ -222,27 +217,16 @@ static int16 turn_logging_on_sector = -1, turn_logging_on_write = -1;
 #define FLOP_CMD_CLAMP 0x09  // Clamp
 #define FLOP_CMD_OKAY 0xFF   // Okay byte for format
 
+// We support only one "inserted" floppy (even though Lisa 1 supports two floppies);
+// This is the currenly inserted floppy image struct. It is non-null even if the floppy is ejected.
 DC42ImageType current_floppy_image;
-
-/*
- * Dependng on the dc42 floppy image file type, the code below "inserts" it into a different floppy drive:
- * If the image type is "Twiggy", it gets inserted in the upper floppy drive 1 that has a drive number of 0x00.
- *    Note: we don't support two diskettes (one in each Twiggy floppy drive).
- * Sony floppies get inserted in the one-and only floppy drive that has a number 0x80.
- * So the value below stores either 0x00 or 0x80, depending on the dc42 image type.
- * Why don't we insert Twiggy floppies in the lower Drive 2 (same as Sony floppies)?
- *     Some software, such as LisaOfficeSystem1.0 installation Disk 1, when booted from that drive,
- *     tries to "switch" to the upper drive by setting floppy_ram[DRIVE] to 0x00, but there is no such drive, 
- *     and the installation "hangs" with a hourglass on the screen. 
- */
-
-uint8 emulated_drive_number;
 
 // Keep stats here (they get reset each time the floppy is inserted and ejected)
 uint32 total_num_sectors_read = 0;
 uint32 total_num_sectors_written = 0;
 
 static uint8 queuedfn = 0xff;
+static uint8 queuedfn_drive = 0xff; // On which drive was the function requested (0x00 = upper, 0x80 = lower, 0xff = an invalid drive)
 
 long getsectornum(DC42ImageType *F, uint8 side, uint8 track, uint8 sec);
 
@@ -269,6 +253,7 @@ char templine[1024];
  */
 void flop_cmd_text(FILE *buglog)
 {
+
     return; // shut it off for now -- too noisy
 
     if (!floppy_ram[GOBYTE])
@@ -588,7 +573,7 @@ void FloppyIRQ_time_up(void)
         DEBUG_LOG(0, "Signaling Eject completed now.");
         append_floppy_log("completed pending Eject IRQ in RWTS::: ");
         floppy_ram[0x2f] = 0x80 | 0x40 | 0x20;
-        floppy_ram[0x2e] = floppy_ram[0x2f] & floppy_ram[0x2c];
+        floppy_ram[0x2e] = floppy_ram[FLOP_INT_MASK] & floppy_ram[FLOP_INT_STAT];
         floppy_ram[0x20] = 0x0;
 
         total_num_sectors_read = 0;
@@ -596,6 +581,7 @@ void FloppyIRQ_time_up(void)
         dc42_close_image(&current_floppy_image);
 
         queuedfn = 0xff;
+        queuedfn_drive = 0xff;
 
         return;
     }
@@ -672,29 +658,24 @@ void FloppyIRQ_time_up(void)
     if (my_rwts) // floppy_ram[FLOP_INT_STAT] |=(floppy_ram[DRIVE]?0xc0:0x0c);
     {
         // TorZidan: replaced the code below with this, to ge it to work with Twiggy floppies:
-        floppy_ram[FLOP_INT_STAT] |=(floppy_ram[DRIVE]?0xc0:0x0c);
+        floppy_ram[FLOP_INT_STAT] |=(queuedfn_drive?0xc0:0x0c);
         //if (floppy_ram[0x2f] & 0x70)
         //    floppy_ram[0x2f] |= 0x80;
-
-        // TODO(TorZidan): try to clear out my_rwts here (set it to 0) and do a regresion test; 
-        // it is some kind of state machine to delay the interrupt generation, to let some code to run before that.
     }
 
-    floppy_ram[0x2e] = floppy_ram[0x2f] & floppy_ram[0x2c];
+    floppy_ram[0x2e] = floppy_ram[FLOP_INT_MASK] & floppy_ram[FLOP_INT_STAT];
     DEBUG_LOG(0, "Setting floppyram[intstat]=%02x intresult=%02x intmask=%02x",
               floppy_ram[0x2f], floppy_ram[0x2e], floppy_ram[0x2c]);
 
-    floppy_FDIR = (floppy_ram[0x2e] & 0x80) ? 1 : 0;
+    floppy_FDIR = (floppy_ram[0x2e] > 0)? 1 : 0;
     if (!floppy_FDIR)
     {
-        // TODO(TorZidan): This line is being reached very often, e.g. during every sector read. 
-        // This was happenning before, and is also happenning after my code changes for adding
-        // Twiggy floppy support. Need to investigate why is it being reached, and attempt a fix.
-        DEBUG_LOG(0, "DANGER - FDIR not set floppyram[intstat]=%02x intresult=%02x intmask=%02x",
+        ALERT_LOG(0, "DANGER - FDIR not set floppyram[intstat]=%02x intresult=%02x intmask=%02x",
                   floppy_ram[0x2f], floppy_ram[0x2e], floppy_ram[0x2c]);
         floppy_FDIR = 1;
     }
     queuedfn = 0xff;
+    queuedfn_drive = 0xff;
 }
 
 /**
@@ -1018,8 +999,8 @@ static void do_floppy_write(DC42ImageType *F)
  */
 void floppy_go6504(void)
 {
-    // ALERT_LOG(0, "Starting in floppy_go6504() (drive/side/track/sector:%d/%d/%d/%d): floppy_6504_wait=%d\n", 
-    //    floppy_ram[DRIVE], floppy_ram[SIDE], floppy_ram[TRACK], floppy_ram[SECTOR], floppy_6504_wait);
+    // ALERT_LOG(0, "Starting in floppy_go6504() (drive/side/track/sector:%d / %d / %d / %d): floppy_6504_wait=%d\n", 
+    //     floppy_ram[DRIVE], floppy_ram[SIDE], floppy_ram[TRACK], floppy_ram[SECTOR], floppy_6504_wait);
 
     static uint8 slowdown;
     long sectornumber = 0;
@@ -1196,53 +1177,24 @@ void floppy_go6504(void)
         memset(lastfloppyrwts, 0, 1024);
 #endif
 
-        if (floppy_ram[DRIVE] != emulated_drive_number)
+        // In Lisa 1 mode (ioromver=0x40), the Lisa may request to work with the lower drive 2 (by setting floppy_ram[DRIVE] == 0x80), which is currently unsupported: 
+        if (floppy_ram[ROMVER] == 0x40 && floppy_ram[DRIVE] == 0x80)
         {
-            // Lisa wants to use another (the other) floppy drive. That drive is not initialized.
-            // We don't support two floppy drives (in order to simplify the user experience). The emulator is stuck.
             floppy_ram[COMMAND] = 0;
             RWTS_IRQ_SIGNAL(FLOP_STAT_INVDRV);
             ALERT_LOG(0, "RWTS access to invalid drive:%02x side:%d, track:%d,sector:%d\n",
                 floppy_ram[DRIVE],floppy_ram[SIDE], floppy_ram[TRACK], floppy_ram[SECTOR]);
-
-            // Tell the user we are stuck:
-            if (floppy_ram[ROMVER] == 0x40) 
-            {
-                // I/O ROM version "40" shows two floppy disk drives at boot (aka "Lisa 1").
-                if (F->ftype==0) 
+            
+            if (F->ftype==0) 
                 {
-                    // Twiggy floppy image files always get inserted into drive 0x00, which is the upper drive 1:
+                    // The code always inserts twiggy images into drive 0x00, which is the upper drive 1:
                     char message[] = "Lisa is requesting access to the lower floppy drive 2, but only the upper floppy drive 1 can be used for Twiggy floppy image files!\n\n"
                         "To boot from a Twiggy floppy image file, restart the emulator, insert a Twiggy diskette (File->Insert Diskette), "
                         "and then, at the boot screen, click on the upper floppy drive 1."; 
                     messagebox(message, "We are stuck :(");
-                } else
-                {
-                    // Sony floppy image files always get inserted into drive 0x80, which is the lower drive 2:
-                    char message[] = "Lisa is requesting access to the upper floppy drive 1, but only the lower floppy drive 2 can be used for Sony floppy image files!\n\n"
-                        "You are trying to use a Sony floppy disk image file in Lisa 1 mode (I/O ROM version 40), which is an unsupported configuration.\n"
-                        "Consider changing the I/O ROM version in File->Preferences to any other version, and restarting the emuilator.";
-                    messagebox(message, "We are stuck :(");
                 }
-            } else 
-            {
-                // All other I/O ROM versions show one floppy disk drive at boot (aka "Lisa 2"). 
-                char message[500] = "Lisa is requesting access to the other (hidden) floppy drive, but only one floppy drive is supported!";
-                if (F->ftype==0) 
-                {
-                    // Give extra tips on how to boot from Twiggy floppies:
-                    strcat(message, "\n\nTips for booting from a Twiggy floppy disk image:\n\n"
-                        "  - In the File->Preferences menu, choose I/O ROM version 40 (there's no need to modify the Lisa ROM). "
-                        "Apply and restart the emulator.\n\n"
-                        "  - Insert a Twiggy diskette (File->Insert Diskette).\n\n"
-                        "  - At the boot screen, click on the upper floppy drive 1 to boot from it."); 
-                }
-                messagebox(message, "We are stuck :(");
-            }
-            // TODO(TorZidan): at this point, the Lisa is often stuck at an hourglass screen and won't recover. Can we issue e.g. an FLOP_CMD_UCLAMP
-            // (eject floppy) command, or find some other way to return back to the boot ROM screen, to avoid this?
-            return;
         }
+
         /* FALLTHROUGH */
         switch (floppy_ram[FUNCTION])
         {
@@ -1302,6 +1254,7 @@ void floppy_go6504(void)
             }
 
             queuedfn = floppy_ram[FUNCTION];
+            queuedfn_drive = floppy_ram[DRIVE];
 
 #ifdef DEBUG
             queuedsectornumber = sectornumber;
@@ -1380,6 +1333,7 @@ void floppy_go6504(void)
             }
 
             queuedfn = floppy_ram[FUNCTION];
+            queuedfn_drive = floppy_ram[DRIVE];
 
 #ifdef DEBUG
             queuedsectornumber = sectornumber;
@@ -1582,6 +1536,7 @@ void floppy_go6504(void)
 
         floppy_ram[FLOP_INT_MASK] &= (floppy_ram[FUNCTION] ^ 0xff); // clear mask bits
         floppy_ram[FLOP_INT_STAT] &= (floppy_ram[FUNCTION] ^ 0xff); // clear current state as well
+        // Note(TorZidan@): The line below writes to the same address as the line above, essentially overwriting the line above. TODO: clean this up.
         floppy_ram[FLOP_PENDING_IRQ_FLAG] = 0;
         floppy_return(0);
         floppy_6504_wait = 0;
@@ -1962,40 +1917,37 @@ void deserialize(DC42ImageType *F)
 // insert_floppy
 int floppy_insert(char *Image) // emulator should call this when user decides to open disk image...
 {
-    fprintf(buglog, "Inserting [%s] floppy", Image);
-    fprintf(buglog, "MAX RAM:%08x MINRAM:%08x TOTRAM:%08X BADRAMID:%02x SYSTEMTYPE:%02x 0=lisa1, 1=lisa2, 2=lisa2+profile 3=lisa2+widget ramchkbitmap:%04x",
+    DC42ImageType *F =&current_floppy_image;
+    int err = 0;
+
+    ALERT_LOG(0, "Inserting [%s] floppy", Image);
+    DEBUG_LOG(0, "MAX RAM:%08x MINRAM:%08x TOTRAM:%08X BADRAMID:%02x SYSTEMTYPE:%02x 0=lisa1, 1=lisa2, 2=lisa2+profile 3=lisa2+widget ramchkbitmap:%04x",
               fetchlong(0x294),
               fetchlong(0x2a4),
               fetchlong(0x2a8),
               fetchbyte(0x2ad), fetchbyte(0x2af),
               fetchword(0x184));
 
+
     append_floppy_log("Inserting floppy:");
     append_floppy_log(Image);
 
+    strncpy(current_floppy_image.fname, Image, 255);
+    // fprintf(buglog,"SRC:Opening Floppy Image file... %s\n",F->fname);
     errno = 0;
-    total_num_sectors_read = 0;
-    total_num_sectors_written = 0;
-    dc42_close_image(&current_floppy_image); // close any previously opened disk image
 
-    // Instantiate a new DC42ImageType structure:
-    DC42ImageType new_image;
-    strncpy(new_image.fname, Image, 255);
-    // fprintf(buglog,"SRC:Opening Floppy Image file... %s\n",new_image.fname);
-    int err = dc42_auto_open(&new_image, Image, "wb"); // for testing the emulator, open images as private "p"  w=writeable, b=best
+    dc42_close_image(F);                  // close any previously opened disk image
+    err = dc42_auto_open(F, Image, "wb"); // for testing the emulator, open images as private "p"  w=writeable, b=best
     if (err)
     {
         floppy_return(FLOP_STAT_NOCLMP); // return failed clamp status
         FloppyIRQ(1);
-        ALERT_LOG(0, "could not open: %s because %s", Image, new_image.errormsg);
-        messagebox(new_image.errormsg, "Could not open this Floppy! Sorry!");
+        ALERT_LOG(0, "could not open: %s because %s", Image, F->errormsg);
+        messagebox(F->errormsg, "Could not open this Floppy! Sorry!");
         append_floppy_log("Could not open floppy");
         perror("error");
         return -1;
     }
-    current_floppy_image = new_image;
-    // A pointer to current_floppy_image, just for convenience:
-    DC42ImageType *F = &current_floppy_image;
 
     err = dc42_check_checksums(F); // 0 if they match, 1 if tags, 2 if data, 3 if both don't match
     switch (err)
@@ -2012,37 +1964,6 @@ int floppy_insert(char *Image) // emulator should call this when user decides to
     default:
     case 0:;
     }
-
-    // Store the chosen drive numner for easy access:
-    emulated_drive_number = (F->ftype==0)? 0x00:0x80; // 0x00 = upper drive 1 , 0x80 = lower drive 2 (or the one-and-only drive on Lisa 2)
-    ALERT_LOG(0, "Setting emulated_drive_number=%02x (%s) based on dc42 image ftype=%02x", 
-        emulated_drive_number, (emulated_drive_number==0x00)? "Top Floppy Drive 1":"Bottom Floppy Drive 2 or the only one drive", F->ftype);
-    // We "insert" Twiggy floppy disks in the upper drive 1 number 0x00, and Sony disks in the one-and-only drive number 0x80.
-    // As long as the CPU does not modify the memory at the offset below to choose another drive number
-    // (it depends on the software being run), all disk operations will go the emulated_drive_number:
-    floppy_ram[DRIVE] = emulated_drive_number;
-    if (emulated_drive_number==0) {
-        floppy_ram[INTSTAT] |= (FLOP_IRQ_SRC_DSKIN1 | FLOP_IRQ_SRC_DRV1);
-    } else {
-        floppy_ram[INTSTAT] |= (FLOP_IRQ_SRC_DSKIN2 | FLOP_IRQ_SRC_DRV2);
-    }
-
-    if (F->ftype==0) {
-        ALERT_LOG(0, "Setting the floppy_ram[TYPE] byte to %02x (a Twiggy floppy).", TWIGGYFLOPPY);
-        floppy_ram[TYPE] = TWIGGYFLOPPY;
-    } else if (F->ftype==1) {
-        ALERT_LOG(0, "Setting the floppy_ram[TYPE] byte to %02x (a SONY400K floppy).", SONY400KFLOPPY);
-        floppy_ram[TYPE] = SONY400KFLOPPY; 
-    } else if (F->ftype==2) {
-        ALERT_LOG(0, "Setting the floppy_ram[TYPE] byte to %02x (a SONY800K floppy).", SONY800KFLOPPY);
-        floppy_ram[TYPE] = SONY800KFLOPPY;
-    } else {
-        ALERT_LOG(0, "Unknown floppy image type: %02x ! Setting the floppy_ram[TYPE] byte to %02x (a SONY400K floppy). Good luch with that.", 
-            F->ftype, SONY400KFLOPPY);
-        floppy_ram[TYPE] = SONY400KFLOPPY;
-    }
-
-    fix_intstat(0);
 
     if (F->numblocks == 1440 || F->numblocks == 2880 || F->numblocks == 5760)
     {
@@ -2066,15 +1987,44 @@ int floppy_insert(char *Image) // emulator should call this when user decides to
 
     deserialize(F);
 
+    if (floppy_ram[ROMVER]!=0x40 && F->ftype==0) 
+    {
+        char message[] = "You are trying to use a Twiggy floppy image file in Lisa 2 mode. It is intended to be used in Lisa 1 mode, with Lisa 1 software. This may not end well.\n\n"
+            "Tips for booting from a Twiggy floppy disk image:\n"
+            "  - In the File->Preferences menu, choose I/O ROM version 40 (there's no need to modify the Lisa ROM). "
+            "Apply and restart the emulator.\n"
+            "  - Insert a Twiggy diskette (File->Insert diskette).\n"
+            "  - At the boot screen, click on the upper floppy drive 1 icon to boot from it."; 
+        messagebox(message, "This may not end well :(");
+    }
+    else if (floppy_ram[ROMVER]==0x40 && F->ftype!=0) 
+    {
+        char message[] = "You are trying to use a Sony floppy image file in Lisa 1 mode. It is intended to be used in Lisa 2 mode, with Lisa 2 software. This may not end well.\n\n"
+            "Tips for booting from a Sony floppy disk image:\n"
+            "  - In the File->Preferences menu, choose any I/O ROM version but 40 (there's no need to modify the Lisa ROM). "
+            "Apply and restart the emulator.\n"
+            "  - Insert a Sony diskette (File->Insert diskette).\n"
+            "  - At the boot screen, click on the floppy drive icon to boot from it."; 
+        messagebox(message, "This may not end well :(");
+    }
+
+    if (F->ftype==0)
+    {
+        ALERT_LOG(0, "Inserting a Twiggy floppy disk image in the upper drive 1 (with drive number 0x00) \n");
+        floppy_ram[FLOP_INT_STAT] |= (FLOP_IRQ_SRC_DSKIN1 | FLOP_IRQ_SRC_DRV1);
+    }
+    else
+    {
+        ALERT_LOG(0, "Inserting a Sony floppy disk image in the lower drive 2 (or the only drive in Lisa 2 mode) (with drive number 0x80) \n");
+        floppy_ram[FLOP_INT_STAT] |= (FLOP_IRQ_SRC_DSKIN2 | FLOP_IRQ_SRC_DRV2);
+    }
+    // Old code: floppy_ram[0x2f] = 0x10 | 0x80;
+    floppy_ram[0x20] = 0xff;
+    fix_intstat(0);
+
     floppy_return(0);
 
     FloppyIRQ(1);
-
-    floppy_ram[0x20] = 0xff;
-    floppy_ram[0x2f] = 0x10 | 0x80;
-
-    fix_intstat(0);
-
     floppy_FDIR = 1;
 
     total_num_sectors_read = 0;
@@ -2195,82 +2145,12 @@ void init_floppy(long iorom)
     floppy_ram[0x73] = 0xDE;
     floppy_ram[0x74] = 0xAA;
 
-    
-    floppy_ram[GOBYTE] = 0x00;
-    floppy_ram[FUNCTION] = 0x88;
-
-    ALERT_LOG(0, "The I/O ROM version is %02x", floppy_ram[ROMVER]);
-    if (floppy_ram[ROMVER] == 0x40) 
-    {
-        // I/O ROM version "40" shows two floppy  (aka "Lisa 1").
-        // Configure the top drive 1 to be the selected drive.
-        emulated_drive_number = 0x00;
-    } else 
-    {
-        // All other I/O ROM versions show one disk drive at boot (aka "Lisa 2").
-        // It's number is 0x80. 
-        emulated_drive_number = 0x80;
-    }
-    // Note: The selected floppy drive may change later, when a floppy is inserted, based on the floppy image type (Twiggy vs others).
-    floppy_ram[DRIVE] = emulated_drive_number;
-
-    floppy_ram[SIDE] = 0x00;
-    floppy_ram[SECTOR] = 0x00;
-    floppy_ram[TRACK] = 0x00;
-    floppy_ram[SPEED] = 0x00;
-    floppy_ram[CONFIRM] = 0x00;
-
-    // which one of these is correct?????
-    // floppy_ram[FLOP_STAT ]=status;
-
-    floppy_ram[STATUS] = FLOP_STAT_NODISK;
-    floppy_ram[STST] = 0x00;
-    floppy_ram[INTSTATUS] = 0;
-
-    // TorZidan: it seems that "0x80" means "the currently chosen drive number in floppy_ram[DRIVE] is enabled"
-    floppy_ram[DRIVE_ENABLED] = 0x80;
-
-    // since this is an emulator and everything is virtual, there won't be any errors at all
-    // if only real life were so perfect, "But then again, as you said, it's an imperfect universe, Mr. Bester"
-
-    floppy_ram[FLOPPY_dat_bitslip1] = 0;
-    floppy_ram[FLOPPY_dat_bitslip2] = 0;
-    floppy_ram[FLOPPY_dat_chksum] = 0;
-    floppy_ram[FLOPPY_adr_bitslip1] = 0;
-    floppy_ram[FLOPPY_adr_bitslip2] = 0;
-    floppy_ram[FLOPPY_wrong_sec] = 0;
-    floppy_ram[FLOPPY_wrong_trk] = 0;
-    floppy_ram[FLOPPY_adr_chksum] = 0;
-    floppy_ram[FLOPPY_usr_cksum1] = 0;
-    floppy_ram[FLOPPY_usr_cksum2] = 0;
-    floppy_ram[FLOPPY_usr_cksum3] = 0;
-    floppy_ram[FLOPPY_bad_sec_total] = 0;
-    floppy_ram[FLOPPY_err_track_num] = 0;
-    floppy_ram[FLOPPY_err_side_num] = 0;
-    floppy_ram[FLOPPY_bad_sect_map] = 0;
-
-    floppy_ram[0x15] = 0x1e;
-    floppy_ram[0x16] = 4;
-    floppy_ram[0x17] = 9;
-    floppy_ram[0x19] = 0x64;
-    floppy_ram[0x1a] = 2;
-    floppy_ram[0x1b] = 0x82;
-    floppy_ram[0x1c] = 0x4f;
-    floppy_ram[0x1d] = 0x0c;
-
-    floppy_ram[0x48] = 0;
-    floppy_ram[0x49] = 0;
-    floppy_ram[0x4a] = 0;
-    floppy_ram[0x4b] = 0;
-    floppy_ram[0x4c] = 0;
-    floppy_ram[0x4d] = 0;
-    floppy_ram[0x4e] = 0;
-    floppy_ram[0x4f] = 0;
-
-    floppy_return(FLOP_STAT_NODISK);
+    if (!!(floppy_ram[ROMVER] & 0x80))
+        floppy_ram[TYPE] = (double_sided_floppy) ? SONY800KFLOPPY : SONY400KFLOPPY;
+    else
+        floppy_ram[TYPE] = TWIGGYFLOPPY;
 }
 
-/* Unused. 
 void sector_checksum(void)
 {
     uint16 a, atmp, x, y, c, nc, m43 = 0;
@@ -2364,7 +2244,6 @@ xret:
     floppy_ram[0x44] = m43 >> 8;
     floppy_ram[0x43] = m43 & 0xff;
 }
-*/
 
 // if we could factor large composites in real time
 // we'd have enough money not to need to rhyme
