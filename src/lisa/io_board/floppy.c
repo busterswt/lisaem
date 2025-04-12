@@ -27,6 +27,26 @@
 *                                                                                      *
 \**************************************************************************************/
 
+/**
+ * TorZidan@: How to do regression testing if modifying this code?
+ * The code is very fragile and therefore it must be tested thoroughly at each code change.
+ * 0. In Preferences: use "H" ROMs; also, choose "Boot Rom Speedup Hacks" and "Hard Drive Acceleration" checkboxes.
+ * 1. Switch I/O ROM to "40", restart the emulator, then install LOS1.0 from floppies (make sure to erase the disk), 
+ *    then restart the emulator and boot from ProFile. 
+ * 2. Switch I/O ROM to "A8" (or to any version other than "40") and restart the emulator. All tests below are done with this I/O ROM.
+ * 3. Install LOS2.0 from floppies (make sure to erase the disk), then restart the emulator and boot from ProFile.
+ * 4. Install LOS3.1 from floppies (make sure to erase the disk), then restart the emulator and boot from ProFile.
+ * 5. Once booted in LOS3.1, insert and eject at-least 20 times all different kinds of Sony floppy images. 
+ *    Spend more time on images that LOS3.1 does not recognize (and prompts you with a dialog). 
+ *    When prompted to initialize such images, click "Cancel".
+ *    Also, try File->Insert blank diskette, and then click "Initialize". Then eject it.
+ *    If you get a popup error that "Lisa is experiencing technical difficulties and need to restart", rever your code.
+ * 6. Install MacWorksXL3.0 from floppies (make sure to erase the disk), then restart the emulator, "insert" the "boot" disk and boot from it. 
+ * 7. If any of the installations above randomly error out with Lisa error "10291" or any other error (and Lisa returns to the boot screen), 
+ *    revert your code.
+ *    Once booted, you should see the ProFile disk on the desktop.
+ * 8. Optional: Install Pascal Workshop 3.0 (make sure to erase the disk), then restart the emulator and boot from ProFile.
+ */
 #define IN_FLOPPY_C
 #include <vars.h>
 
@@ -40,26 +60,26 @@ static int16 turn_logging_on_sector = -1, turn_logging_on_write = -1;
 // Floppy controller macro commands
 #define FLOP_CONTROLLER 0xFCC001
 #define FLOP_CTRLR_SHAKE 0x80 // Handshake
-#define FLOP_CTRLR_RWTS 0x81  // execute the RWTS routine
-#define FLOP_CTRLR_SEEK 0x83  // seek to side/track
-#define FLOP_CTRLR_JSR 0x84   // JSR to routine in C003-5
-#define FLOP_CTRLR_CLIS 0x85  // Clear interrupt status
-#define FLOP_CTRLR_STIM 0x86  // Set interrupt mask
-#define FLOP_CTRLR_CLIM 0x87  // Clear interrupt mask
-#define FLOP_CTRLR_WAIT 0x88  // Wait for 69 96
-#define FLOP_CTRLR_LOOP 0x89  // Loop until reset in ROM
+#define FLOP_CTRLR_RWTS  0x81 // execute the RWTS routine
+#define FLOP_CTRLR_SEEK  0x83 // seek to side/track
+#define FLOP_CTRLR_JSR   0x84 // JSR to routine in C003-5
+#define FLOP_CTRLR_CLIS  0x85 // Clear interrupt status
+#define FLOP_CTRLR_STIM  0x86 // Set interrupt mask
+#define FLOP_CTRLR_CLIM  0x87 // Clear interrupt mask
+#define FLOP_CTRLR_WAIT  0x88 // Wait for 69 96
+#define FLOP_CTRLR_LOOP  0x89 // Loop until reset in ROM
 
 #define FLOP_COMMAND 0xFCC003 // command code
-#define FLOP_CMD_READ 0x00    // Read
-#define FLOP_CMD_WRITE 0x01   // Write
+#define FLOP_CMD_READ   0x00  // Read
+#define FLOP_CMD_WRITE  0x01  // Write
 #define FLOP_CMD_UCLAMP 0x02  // Unclamp - aka eject
 #define FLOP_CMD_FORMAT 0x03  // Format
 #define FLOP_CMD_VERIFY 0x04  // Verify
 #define FLOP_CMD_FMTTRK 0x05  // Format Track
 #define FLOP_CMD_VFYTRK 0x06  // Verify Track
-#define FLOP_CMD_READX 0x07   // Read without checksum vfy
-#define FLOP_CMD_WRITX 0x08   // Write without checksum
-#define FLOP_CMD_CLAMP 0x09   // Clamp
+#define FLOP_CMD_READX  0x07  // Read without checksum vfy
+#define FLOP_CMD_WRITX  0x08  // Write without checksum
+#define FLOP_CMD_CLAMP  0x09  // Clamp
 
 #define FLOPPY_MOTOR 0x21
 #define MOTOR_SPIN(x)                    \
@@ -89,9 +109,6 @@ static int16 turn_logging_on_sector = -1, turn_logging_on_write = -1;
 // #define FLOP_ERROR_STATUS 0xFCC011
 // #define FLOP_DISK_ID_VALUE 0xFCC013
 
-// Floppies generalte interrupts to the CPU whenever a disk is inserted,
-// eject button is pressed, whenever an 81 command is completed.
-
 #define CURRENT_TRACK 0x22
 #define CURRENT_TRACK_GRP 0x23
 #define DRIVE_EXISTS 0x23
@@ -100,8 +117,7 @@ static int16 turn_logging_on_sector = -1, turn_logging_on_write = -1;
 // Both 0x2c and 0x2d were used in the code. I switched all code to use FLOP_INT_MASK=0x2d. Time will tell if this works well.
 #define FLOP_INT_MASK 0x2d    // interrupt mask
 // Note: address 0x2e is also used, e.g: floppy_ram[0x2e] = floppy_ram[FLOP_INT_MASK] & floppy_ram[FLOP_INT_STAT]
-#define FLOP_INT_STAT 0x2f    // interrupt status
-// #define FLOP_INT_STATUS 0xFCC05F
+#define FLOP_INT_STAT 0x2f    // interrupt status address, mapped to 0xFCC05F
 
 #define FLOP_STAT_INVCMD 0x01 // invalid command
 #define FLOP_STAT_INVDRV 0x02 // invalid drive
@@ -205,23 +221,28 @@ static int16 turn_logging_on_sector = -1, turn_logging_on_write = -1;
 #define FLOP_PENDING_IRQ_FLAG 0x2f
 
 // RWTS subcommands
-#define FLOP_CMD_READ 0x00   // Read
-#define FLOP_CMD_WRITE 0x01  // Write
+#define FLOP_CMD_READ   0x00 // Read
+#define FLOP_CMD_WRITE  0x01 // Write
 #define FLOP_CMD_UCLAMP 0x02 // Unclamp/eject
 #define FLOP_CMD_FORMAT 0x03 // Format
 #define FLOP_CMD_VERIFY 0x04 // Verify
 #define FLOP_CMD_FMTTRK 0x05 // Format Track
 #define FLOP_CMD_VFYTRK 0x06 // Verify Track
-#define FLOP_CMD_READX 0x07  // Read without checksum vfy
-#define FLOP_CMD_WRITX 0x08  // Write without checksum
-#define FLOP_CMD_CLAMP 0x09  // Clamp
-#define FLOP_CMD_OKAY 0xFF   // Okay byte for format
+#define FLOP_CMD_READX  0x07 // Read without checksum vfy
+#define FLOP_CMD_WRITX  0x08 // Write without checksum
+#define FLOP_CMD_CLAMP  0x09 // Clamp
+#define FLOP_CMD_OKAY   0xFF // Okay byte for format
 
-// We support only one "inserted" floppy (even though Lisa 1 supports two floppies);
-// This is the currenly inserted floppy image struct. It is non-null even if the floppy is ejected.
-DC42ImageType current_floppy_image;
+// The data structures of the two floppy images that are currently in use.
+// If e.g. the upper drive has no floppy inserted, its current_upper_floppy_image.RAM will be NULL. 
+// Lisa 1 has two drives that map to the structs below; Lisa 2 has just one drive,
+// which is the current_lower_floppy_image; the current_upper_floppy_image is unused by Lisa 2
+// (Lisa 2 software never tries to use the upper drive).
+DC42ImageType current_upper_floppy_image;
+DC42ImageType current_lower_floppy_image;
 
-// Keep stats here (they get reset each time the floppy is inserted and ejected)
+// Keep stats here. They do not get reset until the emuiltor is restarted. 
+// Why? There may be two floppy images inserted at any time, so resetting them upon eject of each flopy does not make sense.
 uint32 total_num_sectors_read = 0;
 uint32 total_num_sectors_written = 0;
 
@@ -242,9 +263,13 @@ static uint8 floppy_last_macro;
 static void do_floppy_read(DC42ImageType *F);
 static void do_floppy_write(DC42ImageType *F);
 
-void fix_intstat(int RWTS);
+void fix_intstat_if_needed(void);
 void RWTS_IRQ_SIGNAL(uint8 status);
 void floppy_return(uint8 status);
+
+uint8 is_upper_floppy_currently_inserted(void);
+uint8 is_lower_floppy_currently_inserted(void);
+uint8 is_floppy_image_currently_inserted(DC42ImageType *F);
 
 char templine[1024];
 
@@ -253,7 +278,6 @@ char templine[1024];
  */
 void flop_cmd_text(FILE *buglog)
 {
-
     return; // shut it off for now -- too noisy
 
     if (!floppy_ram[GOBYTE])
@@ -358,7 +382,7 @@ void append_floppy_log(char *s)
         printlisatime(f);
         flop_cmd_text(f);
         fprintf(f, "pc24:%08x %s #%3d tags:%02x%02x, %02x%02x, %02x%02x, %02x%02x, %02x%02x, %02x%02x\n", pc24, s,
-                getsectornum(&current_floppy_image, floppy_ram[SIDE], floppy_ram[TRACK], floppy_ram[SECTOR]),
+                getsectornum(&current_lower_floppy_image, floppy_ram[SIDE], floppy_ram[TRACK], floppy_ram[SECTOR]),
                 floppy_ram[0x1F4 + 0], floppy_ram[0x1F4 + 1], floppy_ram[0x1F4 + 2], floppy_ram[0x1F4 + 3], floppy_ram[0x1F4 + 4], floppy_ram[0x1F4 + 5],
                 floppy_ram[0x1F4 + 6], floppy_ram[0x1F4 + 7], floppy_ram[0x1F4 + 8], floppy_ram[0x1F4 + 9], floppy_ram[0x1F4 + 10], floppy_ram[0x1F4 + 11]);
 
@@ -555,12 +579,9 @@ long getsectornum(DC42ImageType *F, uint8 side, uint8 track, uint8 sec)
 *                                                                                     *
 *  The FDIR line is set regardless.  If RWTS, then the INTSTATUS is set for the drive *
 \*************************************************************************************/
-
-// void FloppyDelayGOBYTE0(void)     {IRQRingBufferAdd(IRQ_GOBYTE_0, 0L);}
-static int my_rwts = 0;
-
 void FloppyIRQ_time_up(void)
 {
+    // ALERT_LOG(0, "In FloppyIRQ_time_up() : queuedfn=%02x, queuedfn_drive=%02x \n", queuedfn, queuedfn_drive);
 
     if (queuedfn == 0xff)
         return;
@@ -568,28 +589,10 @@ void FloppyIRQ_time_up(void)
     if (floppy_6504_wait < 254)
         floppy_6504_wait = 0;
 
-    if (queuedfn == FLOP_CMD_UCLAMP)
-    {
-        DEBUG_LOG(0, "Signaling Eject completed now.");
-        append_floppy_log("completed pending Eject IRQ in RWTS::: ");
-        floppy_ram[0x2f] = 0x80 | 0x40 | 0x20;
-        floppy_ram[0x2e] = floppy_ram[FLOP_INT_MASK] & floppy_ram[FLOP_INT_STAT];
-        floppy_ram[0x20] = 0x0;
-
-        total_num_sectors_read = 0;
-        total_num_sectors_written = 0;
-        dc42_close_image(&current_floppy_image);
-
-        queuedfn = 0xff;
-        queuedfn_drive = 0xff;
-
-        return;
-    }
-
 #ifdef DEBUG
     DEBUG_LOG(0, "%s: cpuclock:%016llx, current sector:%ld,(side/track/sect:%d:%d:%d)",
               lastfloppyrwts, cpu68k_clocks,
-              getsectornum(&current_floppy_image, floppy_ram[SIDE], floppy_ram[TRACK], floppy_ram[SECTOR]),
+              getsectornum(&current_lower_floppy_image, floppy_ram[SIDE], floppy_ram[TRACK], floppy_ram[SECTOR]),
               floppy_ram[SIDE], floppy_ram[TRACK], floppy_ram[SECTOR]);
 #endif
 
@@ -599,7 +602,7 @@ void FloppyIRQ_time_up(void)
     case FLOP_CMD_READ:
         append_floppy_log("completing pending READ IRQ in RWTS");
         {
-            DC42ImageType *F = &current_floppy_image;
+            DC42ImageType *F = (queuedfn_drive==0)? &current_upper_floppy_image:&current_lower_floppy_image;
             if (F)
             {
                 if (F->RAM)
@@ -608,14 +611,14 @@ void FloppyIRQ_time_up(void)
                 {
                     DEBUG_LOG(0, "No floppy in drive");
                     RWTS_IRQ_SIGNAL(FLOP_STAT_NODISK);
-                    floppy_FDIR = (floppy_ram[0x2e] & 0x80) ? 1 : 0;
+                    floppy_FDIR = 1;
                 }
             }
             else
             {
                 DEBUG_LOG(0, "No floppy in drive");
                 RWTS_IRQ_SIGNAL(FLOP_STAT_NODISK);
-                floppy_FDIR = (floppy_ram[0x2e] & 0x80) ? 1 : 0;
+                floppy_FDIR = 1;
             }
         }
 #ifdef DEBUG
@@ -627,7 +630,7 @@ void FloppyIRQ_time_up(void)
     case FLOP_CMD_WRITE:
         append_floppy_log("completing pending WRITE IRQ in RWTS");
         {
-            DC42ImageType *F = &current_floppy_image;
+            DC42ImageType *F = (queuedfn_drive==0)? &current_upper_floppy_image:&current_lower_floppy_image;
             if (F)
             {
                 if (F->RAM)
@@ -636,14 +639,14 @@ void FloppyIRQ_time_up(void)
                 {
                     DEBUG_LOG(0, "No floppy in drive");
                     RWTS_IRQ_SIGNAL(FLOP_STAT_NODISK);
-                    floppy_FDIR = (floppy_ram[0x2e] & 0x80) ? 1 : 0;
+                    floppy_FDIR = 1;
                 }
             }
             else
             {
                 DEBUG_LOG(0, "No floppy in drive");
                 RWTS_IRQ_SIGNAL(FLOP_STAT_NODISK);
-                floppy_FDIR = (floppy_ram[0x2e] & 0x80) ? 1 : 0;
+                floppy_FDIR = 1;
             }
         }
 #ifdef DEBUG
@@ -655,13 +658,8 @@ void FloppyIRQ_time_up(void)
         DEBUG_LOG(0, "Unknown queued command:%02x", queuedfn);
     }
 
-    if (my_rwts) // floppy_ram[FLOP_INT_STAT] |=(floppy_ram[DRIVE]?0xc0:0x0c);
-    {
-        // TorZidan: replaced the code below with this, to ge it to work with Twiggy floppies:
-        floppy_ram[FLOP_INT_STAT] |=(queuedfn_drive?0xc0:0x0c);
-        //if (floppy_ram[0x2f] & 0x70)
-        //    floppy_ram[0x2f] |= 0x80;
-    }
+    floppy_ram[FLOP_INT_STAT] |=(queuedfn_drive?0xc0:0x0c);
+    fix_intstat_if_needed();
 
     floppy_ram[0x2e] = floppy_ram[FLOP_INT_MASK] & floppy_ram[FLOP_INT_STAT];
     DEBUG_LOG(0, "Setting floppyram[intstat]=%02x intresult=%02x intmask=%02x",
@@ -682,25 +680,23 @@ void FloppyIRQ_time_up(void)
  * The disk drives generate an interrupt to the CPU whenever a disk is inserted or ejected, 
  * and when an 0x81 command (RWTS routine) completes.
  * 
- * The FloppyIRQ(uint8 RWTS) function generates a Floppy Disk Interrupt request (aka FDIR) ,
+ * The FloppyIRQ(uint32 delay) function generates a Floppy Disk Interrupt request (aka FDIR) ,
  * e.g. "read sector RWTS routine has completed", so that the 68000 can come and get the data. 
- * If the parameter RWTS is >0, the FLOP_INT_STAT address is also set.
  * 
- * The CPU can examine the command success/failure at memory offset 0x5F. 
+ * The CPU can examine the command success/failure at memory offset 0xFCC011. 
  * The possible values are in Figure 2-8 at https://lisa.sunder.net/LisaHardwareManual1983.pdf#page=49
  * 
- * The CPU can find the interrupt source (e.g. "RWTS routine completed for Drive 1) at memory address 0xFCC05F. 
+ * The CPU can find the interrupt source (e.g. "RWTS routine completed for Drive 1") at memory address 0xFCC05F. 
  * The possible values are in Figure 2-9 at https://lisa.sunder.net/LisaHardwareManual1983.pdf#page=50
  * 
- * Note: this code just schedules the interrupt to be generated after a small delay, which gives
- * a chance to the CPU to get to the "wait for interrupt" cycle.
+ * Note: this code just schedules the interrupt to be generated after a delay, which gives
+ * a chance to the 68000 to get to the "wait for interrupt" cycle.
  */
-void FloppyIRQ(uint8 RWTS)
+void FloppyIRQ(uint32 delay)
 {
 
-    fdir_timer = cpu68k_clocks + (RWTS == 2 ? (HALF_OF_A_SECOND) : (HUN_THOUSANDTH_OF_A_SEC)); // THOUSANDTH_OF_A_SECOND;
+    fdir_timer = cpu68k_clocks + delay;
     cpu68k_clocks_stop = MIN(fdir_timer + 1, cpu68k_clocks_stop);                              // 2021.06.11
-    my_rwts = RWTS;
 
 #ifndef USE64BITTIMER
     prevent_clk_overflow_now();
@@ -764,58 +760,17 @@ void floppy_sec_dump(int lognum, DC42ImageType *F, int32 sectornumber, char *tex
 
 extern void enable_4MB_macworks(void);
 
+// Note: the validation of side,track,sector, etc has been done by the caller. No need to do it again.
 static void do_floppy_read(DC42ImageType *F)
 {
-    long sectornumber = 0;
     uint8 *ptr;
-    DEBUG_LOG(0, "SRC:Read\n");
-    if (F == NULL)
-    {
-        DEBUG_LOG(0, "SRC:null ft\n");
-        RWTS_IRQ_SIGNAL(FLOP_STAT_DRVNOT);
-        return;
-    }
-    if (F->fd < 0 && !F->fh)
-    {
-        DEBUG_LOG(0, "SRC:null fhandle\n");
-        RWTS_IRQ_SIGNAL(FLOP_STAT_DRVNOT);
-        return;
-    }
-    if (floppy_ram[TRACK] > F->maxtrk)
-    {
-        DEBUG_LOG(0, "SRC:track>max %d>%d\n", floppy_ram[TRACK], F->maxtrk);
-        RWTS_IRQ_SIGNAL(FLOP_STAT_INVTRK);
-        return;
-    }
-    if (floppy_ram[SECTOR] > F->maxsec)
-    {
-        DEBUG_LOG(0, "SRC:sect:%d>max %d\n", floppy_ram[SECTOR], F->maxsec);
-        RWTS_IRQ_SIGNAL(FLOP_STAT_INVSEC);
-        return;
-    }
-    if (floppy_ram[SIDE] > F->maxside)
-    {
-        DEBUG_LOG(0, "SRC:side>max %d>%d\n", floppy_ram[SIDE], F->maxside);
-        RWTS_IRQ_SIGNAL(FLOP_STAT_INVSID);
-        return;
-    }
-
-    sectornumber = getsectornum(F, floppy_ram[SIDE], floppy_ram[TRACK], floppy_ram[SECTOR]);
-
+    long sectornumber = getsectornum(F, floppy_ram[SIDE], floppy_ram[TRACK], floppy_ram[SECTOR]);
 #ifdef DEBUG
     if (sectornumber != queuedsectornumber && queuedsectornumber > 0)
     {
         EXIT(1, 0, "Danger! Sector number is %ld but was %ld when first requested in do_floppy_read.", sectornumber, queuedsectornumber);
     }
 #endif
-
-    if (sectornumber == -1)
-    {
-        DEBUG_LOG(0, "Invalid floppy sector %ld", sectornumber);
-        RWTS_IRQ_SIGNAL(FLOP_STAT_INVSEC);
-        return;
-    }
-
     // convert unbootable fake dual parallel card to have the proper ID.
     if (!sectornumber && (pc24 & 0x00ff0000) == 0x00fe0000 && !romless && dualparallelrom[0x30] == 0xff && dualparallelrom[0x31] == 0xff)
     {
@@ -837,16 +792,9 @@ static void do_floppy_read(DC42ImageType *F)
 
     errno = 0;
     DEBUG_LOG(0, "reading from ram.");
-
     DEBUG_LOG(0, "read floppy sector #%ld tags at offset:%ld size %d bytes", sectornumber,
               (sectornumber * F->tagsize) + F->tagstart, F->tagsize);
-
     DEBUG_LOG(0, "tagsize is:%ld sectorsize is:%d tagstart is:%ld", F->tagsize, F->sectorsize, F->tagstart);
-
-    if (F->RAM == NULL)
-    {
-        DEBUG_LOG(0, "F->RAM is null!!!");
-    }
 
     // wipe the tags
     floppy_ram[0x1F4 + 0] = 0;
@@ -868,7 +816,7 @@ static void do_floppy_read(DC42ImageType *F)
     ptr = dc42_read_sector_data(F, sectornumber);
     if (!ptr)
     {
-        DEBUG_LOG(0, "Could not read sector #%ld", sectornumber);
+        ALERT_LOG(0, "Could not read sector #%ld ! \n", sectornumber);
         return;
     }
     // Copy datasize=512 bytes from the dc42 image into floppy_ram[], starting at location DISKDATASEC=512
@@ -885,7 +833,6 @@ static void do_floppy_read(DC42ImageType *F)
     ptr = dc42_read_sector_tags(F, sectornumber);
     if (ptr != NULL) {
         // Copy tagsize=12 bytes from the dc42 image into floppy_ram[], starting at location DISKDATAHDR=0x1f4=500
-        // fprintf(buglog, "######################## Before memcpy: reading data for sector %d from dc42 image into floppy_ram: (side/track/sector:%d/%d/%d), DISKDATAHDR=%d\n", sectornumber, floppy_ram[SIDE], floppy_ram[TRACK], floppy_ram[SECTOR], DISKDATAHDR);
         memcpy(&floppy_ram[DISKDATAHDR], ptr, F->tagsize);
     }
 
@@ -914,83 +861,23 @@ static void do_floppy_read(DC42ImageType *F)
               floppy_ram[0x1F4 + 6], floppy_ram[0x1F4 + 7], floppy_ram[0x1F4 + 8], floppy_ram[0x1F4 + 9], floppy_ram[0x1F4 + 10], floppy_ram[0x1F4 + 11]);
 
     total_num_sectors_read++;
-    RWTS_IRQ_SIGNAL(0);
 }
 
+// Note: the validation of side,track,sector, etc has been done by the caller. No need to do it again.
 static void do_floppy_write(DC42ImageType *F)
 {
-    long sectornumber = 0;
-
-    if (F == NULL)
-    {
-        DEBUG_LOG(0, "SRC:null ft\n");
-        RWTS_IRQ_SIGNAL(FLOP_STAT_DRVNOT);
-        return;
-    }
-    if (F->fd < 0 && F->fh == NULL)
-    {
-        DEBUG_LOG(0, "SRC:null fhandle\n");
-        RWTS_IRQ_SIGNAL(FLOP_STAT_DRVNOT);
-        return;
-    }
-    if (floppy_ram[TRACK] > F->maxtrk)
-    {
-        DEBUG_LOG(0, "SRC:track>max %d>%d\n", floppy_ram[TRACK], F->maxtrk);
-        RWTS_IRQ_SIGNAL(FLOP_STAT_INVTRK);
-        return;
-    }
-    if (floppy_ram[SECTOR] > F->maxsec)
-    {
-        DEBUG_LOG(0, "SRC:sect:%d>max %d\n", floppy_ram[SECTOR], F->maxsec);
-        RWTS_IRQ_SIGNAL(FLOP_STAT_INVSEC);
-        return;
-    }
-    if (floppy_ram[SIDE] > F->maxside)
-    {
-        DEBUG_LOG(0, "SRC:side>max %d>%d\n", floppy_ram[SIDE], F->maxside);
-        RWTS_IRQ_SIGNAL(FLOP_STAT_INVSID);
-        return;
-    }
-    sectornumber = getsectornum(F, floppy_ram[SIDE], floppy_ram[TRACK], floppy_ram[SECTOR]);
-
-    if (sectornumber == -1)
-    {
-        DEBUG_LOG(0, "Invalid floppy write sector %ld", sectornumber);
-        RWTS_IRQ_SIGNAL(FLOP_STAT_INVSEC);
-        return;
-    }
-
+    long sectornumber = getsectornum(F, floppy_ram[SIDE], floppy_ram[TRACK], floppy_ram[SECTOR]);
 #ifdef DEBUG
     if (sectornumber != queuedsectornumber && queuedsectornumber > 0)
     {
         EXIT(1, 0, "Danger! Sector number is %ld but was %ld when first requested in do_floppy_write.", sectornumber, queuedsectornumber);
     }
 #endif
-
-    if (F->fd < 0 && F->fh == NULL)
-    { // floppy_ram[FLOP_INT_STAT] |=(floppy_ram[DRIVE]?0x0c:0xc0);
-        RWTS_IRQ_SIGNAL(FLOP_STAT_DRVNOT);
-        return;
-    }
-
-    errno = 0;
-
     DEBUG_LOG(0, "write floppy sector #%ld", sectornumber);
-
     //floppy_motor_sounds(floppy_ram[TRACK]); //JD commented out
-
     dc42_write_sector_tags(F, sectornumber, &floppy_ram[DISKDATAHDR]);
     dc42_write_sector_data(F, sectornumber, &floppy_ram[DISKDATASEC]);
-
     total_num_sectors_written++;
-    RWTS_IRQ_SIGNAL(0);
-
-    //        #ifdef DEBUG
-    //         if (debug_log_enabled)  floppy_sec_dump(0,F,sectornumber,"write");
-    //         if (debug_log_enabled)  floppy_sec_dump(1,F,sectornumber,"write");
-    //        #endif
-    //        return;
-
 }
 
 /**
@@ -1005,7 +892,7 @@ void floppy_go6504(void)
     static uint8 slowdown;
     long sectornumber = 0;
     //    char *tempbuf;
-    DC42ImageType *F = &current_floppy_image;
+    DC42ImageType *F = (floppy_ram[DRIVE]==0)? &current_upper_floppy_image:&current_lower_floppy_image;
 
     // char *DTCImage1Sig="SIGNATURE: DISK IMAGE FILE      VERSION: 1  ";
     // //                012345678901234567890123456789012345678901234
@@ -1121,10 +1008,10 @@ void floppy_go6504(void)
         {                               // it's OK to get CLIS when fdir is already on however as code can poll for this.
 
             if (k == FLOP_CTRLR_CLIS) {
-                // ALERT_LOG(0, "################################### floppy: FLOP_CTRLR_CLIS %02x while IRQ pending to fire @%16llx\n", k, fdir_timer);
+                // ALERT_LOG(0, "floppy: FLOP_CTRLR_CLIS %02x while IRQ pending to fire @%16llx\n", k, fdir_timer);
                 snprintf(templine, 1023, "floppy: FLOP_CTRLR_CLIS %02x while IRQ pending to fire @%16llx\n", k, fdir_timer);
             } else {
-                // ALERT_LOG(0, "################################### floppy: DANGER unexpected floppy command %02x (%02x) while IRQ pending @%16lx\n", k, j, fdir_timer);
+                // ALERT_LOG(0, "floppy: DANGER unexpected floppy command %02x (%02x) while IRQ pending @%16lx\n", k, j, fdir_timer);
                 snprintf(templine, 1023, "floppy: DANGER unexpected floppy command %02x (%02x) while IRQ pending @%16lx\n", k, j, fdir_timer);
             }
             DEBUG_LOG(0, templine);
@@ -1176,25 +1063,6 @@ void floppy_go6504(void)
 #ifdef DEBUG
         memset(lastfloppyrwts, 0, 1024);
 #endif
-
-        // In Lisa 1 mode (ioromver=0x40), the Lisa may request to work with the lower drive 2 (by setting floppy_ram[DRIVE] == 0x80), which is currently unsupported: 
-        if (floppy_ram[ROMVER] == 0x40 && floppy_ram[DRIVE] == 0x80)
-        {
-            floppy_ram[COMMAND] = 0;
-            RWTS_IRQ_SIGNAL(FLOP_STAT_INVDRV);
-            ALERT_LOG(0, "RWTS access to invalid drive:%02x side:%d, track:%d,sector:%d\n",
-                floppy_ram[DRIVE],floppy_ram[SIDE], floppy_ram[TRACK], floppy_ram[SECTOR]);
-            
-            if (F->ftype==0) 
-                {
-                    // The code always inserts twiggy images into drive 0x00, which is the upper drive 1:
-                    char message[] = "Lisa is requesting access to the lower floppy drive 2, but only the upper floppy drive 1 can be used for Twiggy floppy image files!\n\n"
-                        "To boot from a Twiggy floppy image file, restart the emulator, insert a Twiggy diskette (File->Insert Diskette), "
-                        "and then, at the boot screen, click on the upper floppy drive 1."; 
-                    messagebox(message, "We are stuck :(");
-                }
-        }
-
         /* FALLTHROUGH */
         switch (floppy_ram[FUNCTION])
         {
@@ -1204,7 +1072,7 @@ void floppy_go6504(void)
             floppy_ram[0x68] = 0xff; /* FALLTHRU */ // enable brute force flag
 
         case FLOP_CMD_READ: /* FALLTHRU */
-            if (F == NULL)
+            if (F == NULL || F->RAM == NULL)
             {
                 DEBUG_LOG(0, "SRC:null fhandle\n");
                 RWTS_IRQ_SIGNAL(FLOP_STAT_NODISK);
@@ -1218,30 +1086,25 @@ void floppy_go6504(void)
                 floppy_FDIR = 1;
                 return;
             }
-            if (F->RAM == NULL)
-            {
-                DEBUG_LOG(0, "SRC:no RAM\n");
-                RWTS_IRQ_SIGNAL(FLOP_STAT_NODISK);
-                floppy_FDIR = 1;
-                return;
-            }
-
             if (floppy_ram[TRACK] > F->maxtrk)
             {
                 DEBUG_LOG(0, "SRC:track>max %d>%d\n", floppy_ram[TRACK], F->maxtrk);
                 RWTS_IRQ_SIGNAL(FLOP_STAT_INVTRK);
+                floppy_FDIR = 1;
                 return;
             }
             if (floppy_ram[SECTOR] > F->maxsec)
             {
                 DEBUG_LOG(0, "SRC:sect:%d>max %d\n", floppy_ram[SECTOR], F->maxsec);
                 RWTS_IRQ_SIGNAL(FLOP_STAT_INVSEC);
+                floppy_FDIR = 1;
                 return;
             }
             if (floppy_ram[SIDE] > F->maxside)
             {
                 DEBUG_LOG(0, "SRC:side>max %d>%d\n", floppy_ram[SIDE], F->maxside);
                 RWTS_IRQ_SIGNAL(FLOP_STAT_INVSID);
+                floppy_FDIR = 1;
                 return;
             }
 
@@ -1250,6 +1113,7 @@ void floppy_go6504(void)
             {
                 DEBUG_LOG(0, "Invalid sector %ld", sectornumber);
                 RWTS_IRQ_SIGNAL(FLOP_STAT_INVSEC);
+                floppy_FDIR = 1;
                 return;
             }
 
@@ -1259,68 +1123,52 @@ void floppy_go6504(void)
 #ifdef DEBUG
             queuedsectornumber = sectornumber;
 #endif
-
-            // do_floppy_read(F);  here here here here here here
-
-            //                       #ifdef DEBUG
-            //                         snprintf(templine,1024,"queing read from sector %ld (hd/trk/sec: %d/%d/%d)",
-            //                                                 sectornumber,floppy_ram[SIDE],floppy_ram[TRACK],floppy_ram[SECTOR]);
-            //                         append_floppy_log(templine);
-            //
-            //                         if ( sectornumber==turn_logging_on_sector)
-            //                               {
-            //                                   debug_log_enabled=1;  // turn on debug log on sector read
-            //                                   debug_on("sector read");
-            //                                   fprintf(buglog,"***DEBUGGING TURNED ON READ FROM SECTOR %d *****\n",turn_logging_on_sector);
-            //                                   DEBUG_LOG(0,"LisaEm Debugging turned on - sector read");
-            //                               }
-            //                         if (turn_logging_on_sector==-666) {debug_log_enabled=1; debug_on("auto-all-sector");}
-            //                       #endif
-            //
-            //                       #ifdef DEBUG
-            //                       snprintf(lastfloppyrwts,1023,"read sec #%3ld NOW(side:%d:trk:%d:sec:%d)",
-            //                               sectornumber,floppy_ram[SIDE], floppy_ram[TRACK], floppy_ram[SECTOR]);
-            //
-            //                       //DEBUG_LOG(0,"read from sector #%d",sectornumber);
-            //
-            //                       #endif
-
             snprintf(templine, 1023, "read sec #%ld PENDING (side:%d:trk:%d:sec:%d)\n",
                      sectornumber, floppy_ram[SIDE], floppy_ram[TRACK], floppy_ram[SECTOR]);
             append_floppy_log("------------------------------------------------------------------");
             append_floppy_log(templine);
 
-            FloppyIRQ(1);
-
+            FloppyIRQ(HUN_THOUSANDTH_OF_A_SEC);
             return;
 
         case FLOP_CMD_WRITX:
-            fprintf(buglog, "brute force: ");
+            DEBUG_LOG(0, "brute force write: ");
             floppy_ram[0x68] = 0xff; /* FALLTHRU */
         case FLOP_CMD_WRITE:         /* FALLTHRU */
             DEBUG_LOG(0, "SRC:Write\n");
-            if (F->fd < 0)
+            if (F == NULL || F->RAM == NULL)
             {
                 DEBUG_LOG(0, "SRC:null fhandle\n");
-                RWTS_IRQ_SIGNAL(FLOP_STAT_DRVNOT);
+                RWTS_IRQ_SIGNAL(FLOP_STAT_NODISK);
+                floppy_FDIR = 1;
+                return;
+            }
+            if (F->fd < 0 && F->fh == NULL)
+            {
+                DEBUG_LOG(0, "SRC:null fhandle\n");
+                RWTS_IRQ_SIGNAL(FLOP_STAT_NODISK);
+                floppy_FDIR = 1;
                 return;
             }
             if (floppy_ram[TRACK] > F->maxtrk)
             {
                 DEBUG_LOG(0, "SRC:track>max %d>%d\n", floppy_ram[TRACK], F->maxtrk);
                 RWTS_IRQ_SIGNAL(FLOP_STAT_INVTRK);
+                floppy_FDIR = 1;
                 return;
             }
             if (floppy_ram[SECTOR] > F->maxsec)
             {
                 DEBUG_LOG(0, "SRC:sect:%d>max %d\n", floppy_ram[SECTOR], F->maxsec);
                 RWTS_IRQ_SIGNAL(FLOP_STAT_INVSEC);
+                floppy_FDIR = 1;
                 return;
             }
             if (floppy_ram[SIDE] > F->maxside)
             {
                 DEBUG_LOG(0, "SRC:side>max %d>%d\n", floppy_ram[SIDE], F->maxside);
                 RWTS_IRQ_SIGNAL(FLOP_STAT_INVSID);
+                floppy_FDIR = 1;
                 return;
             }
 
@@ -1329,6 +1177,7 @@ void floppy_go6504(void)
             {
                 DEBUG_LOG(0, "Invalid sector %ld", sectornumber);
                 RWTS_IRQ_SIGNAL(FLOP_STAT_INVSEC);
+                floppy_FDIR = 1;
                 return;
             }
 
@@ -1350,70 +1199,38 @@ void floppy_go6504(void)
                      floppy_ram[0x1F4 + 0], floppy_ram[0x1F4 + 1], floppy_ram[0x1F4 + 2], floppy_ram[0x1F4 + 3], floppy_ram[0x1F4 + 4], floppy_ram[0x1F4 + 5],
                      floppy_ram[0x1F4 + 6], floppy_ram[0x1F4 + 7], floppy_ram[0x1F4 + 8], floppy_ram[0x1F4 + 9], floppy_ram[0x1F4 + 10], floppy_ram[0x1F4 + 11]);
 #endif
-
-            //                       #ifdef DEBUG
-            //                         if ( sectornumber==turn_logging_on_write)
-            //                               {
-            //                                   debug_log_enabled=1;  // turn on debug log on sector read
-            //                                   debug_on("sector read");
-            //                                   fprintf(buglog,"***DEBUGGING TURNED ON READ FROM SECTOR %d *****\n",turn_logging_on_sector);
-            //                                   DEBUG_LOG(0,"LisaEm Debugging turned on - sector read");
-            //                               }
-            //                         if (turn_logging_on_sector==-666) {debug_log_enabled=1; debug_on("auto-all-sector");}
-            //                       #endif
-
-            // do_floppy_write(F);
-            FloppyIRQ(1);
+            FloppyIRQ(HUN_THOUSANDTH_OF_A_SEC);
             return;
 
-        case FLOP_CMD_CLAMP: // mount/open disk image
-            // fprintf(buglog,"SRC:Floppy Clamp\n");
-            RWTS_IRQ_SIGNAL(0);
+        case FLOP_CMD_CLAMP: // Lisa 1 generates this command to clamp the twiggy heads onto the disk. 
+            DEBUG_LOG(0, "Floppy clamp queued on drive %02x \n", floppy_ram[DRIVE]);
+            // Can (and does) the floppy disk controller recognize that there is no disk in the drive? We assume it does:
+            uint8 clamp_return_status = (F->RAM == NULL || (F->fd < 0 && F->fh == NULL))? FLOP_STAT_NODISK:0; // or perhaps return FLOP_STAT_NOCLMP?
+            DEBUG_LOG(0, "the FLOP_CMD_CLAMP for drive %02x return status is: %02x \n", floppy_ram[DRIVE], clamp_return_status);
+            RWTS_IRQ_SIGNAL(clamp_return_status);
+            floppy_FDIR = 1;
             return;
 
         case FLOP_CMD_UCLAMP: // eject/close/unclamp disk image
-
-            // dumpram("floppy-eject");
-
-            //                    #ifdef DEBUG
-            //                     if (turn_logging_on_sector==-666) {debug_log_enabled=1; debug_on("eject-always-on");}
-            //                     else {debug_off(); debug_log_enabled=0;}
-            //                    #endif
-
-            // fprintf(buglog,"SRC:floppy Unclamp/Eject\n");
-            // DEBUG_LOG(0,"Lisa Ejected floppy");
-            append_floppy_log("Lisa Ejected Floppy.");
-
-            total_num_sectors_read = 0;
-            total_num_sectors_written = 0;
+            DEBUG_LOG(0, "Floppy eject queued on drive %02x \n", floppy_ram[DRIVE]);
             dc42_close_image(F);
-            RWTS_IRQ_SIGNAL(0);
-
             floppy_ram[0x20] = 0;
-            floppy_ram[0x2f] = 0x80 | 0x40 | 0x20; // not sure about the 0x20 at the end.
+            RWTS_IRQ_SIGNAL(0);
+            floppy_FDIR = 1;
 #ifdef DEBUG
             snprintf(lastfloppyrwts, 1023, "Eject NOW");
 #endif
-            RWTS_IRQ_SIGNAL(0);
-            FloppyIRQ(2); // 2006.05.21  // still doesn't work too well.  need to add a 1 second delay for eject msg's.
-
-            DEBUG_LOG(0, "Floppy eject queued.");
-            floppy_ram[0x2f] = 0x80 | 0x40; //|0x20;  // not sure about the 0x20 at the end.
-
-            // enabled-for-macworks-20060607
-            // if (!debug_log_enabled) { debug_on("eject-always-on"); debug_log_enabled=1;  }
-
-            floppy_FDIR = 1;
-
-            eject_floppy_animation();
+            // Do not animate ejecting the bottom drive 2 in Lisa 1 mode, because there is no "skin" for it:
+            if((floppy_iorom == 0x40 && floppy_ram[DRIVE] == 0x00) || (floppy_iorom != 0x40)) 
+                eject_floppy_animation();
 
             return;
 
         case FLOP_CMD_FMTTRK:
-            ALERT_LOG(0, "Format track.");
+            DEBUG_LOG(0, "Format track.");
             /* FALLTHRU */ // ignore the rest o'this
         case FLOP_CMD_FORMAT:
-            ALERT_LOG(0, "Format whole disk.");
+            DEBUG_LOG(0, "Format whole disk.");
             /* FALLTHRU */ // format a track (erase all it's sectors!)
 
         case FLOP_CMD_VERIFY:
@@ -1421,7 +1238,7 @@ void floppy_go6504(void)
         case FLOP_CMD_VFYTRK:
             floppy_FDIR = 1; // was missing from pre RC2!
             RWTS_IRQ_SIGNAL(0);
-            ALERT_LOG(0, "...")
+            DEBUG_LOG(0, "...")
             return;
         }
         /* FALLTHRU */
@@ -1915,12 +1732,12 @@ void deserialize(DC42ImageType *F)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // insert_floppy
-int floppy_insert(char *Image) // emulator should call this when user decides to open disk image...
+int floppy_insert(char *Image, uint8 insert_in_upper_floppy_drive) // emulator should call this when user decides to open disk image...
 {
-    DC42ImageType *F =&current_floppy_image;
+    DC42ImageType *F = (insert_in_upper_floppy_drive) ? &current_upper_floppy_image:&current_lower_floppy_image;
     int err = 0;
 
-    ALERT_LOG(0, "Inserting [%s] floppy", Image);
+    DEBUG_LOG(0, "Inserting [%s] floppy", Image);
     DEBUG_LOG(0, "MAX RAM:%08x MINRAM:%08x TOTRAM:%08X BADRAMID:%02x SYSTEMTYPE:%02x 0=lisa1, 1=lisa2, 2=lisa2+profile 3=lisa2+widget ramchkbitmap:%04x",
               fetchlong(0x294),
               fetchlong(0x2a4),
@@ -1932,7 +1749,7 @@ int floppy_insert(char *Image) // emulator should call this when user decides to
     append_floppy_log("Inserting floppy:");
     append_floppy_log(Image);
 
-    strncpy(current_floppy_image.fname, Image, 255);
+    strncpy(F->fname, Image, 255);
     // fprintf(buglog,"SRC:Opening Floppy Image file... %s\n",F->fname);
     errno = 0;
 
@@ -1940,8 +1757,6 @@ int floppy_insert(char *Image) // emulator should call this when user decides to
     err = dc42_auto_open(F, Image, "wb"); // for testing the emulator, open images as private "p"  w=writeable, b=best
     if (err)
     {
-        floppy_return(FLOP_STAT_NOCLMP); // return failed clamp status
-        FloppyIRQ(1);
         ALERT_LOG(0, "could not open: %s because %s", Image, F->errormsg);
         messagebox(F->errormsg, "Could not open this Floppy! Sorry!");
         append_floppy_log("Could not open floppy");
@@ -1968,9 +1783,6 @@ int floppy_insert(char *Image) // emulator should call this when user decides to
     if (F->numblocks == 1440 || F->numblocks == 2880 || F->numblocks == 5760)
     {
         messagebox("Yuck! I can't swallow MFM (720K/1.44M/2.88M) floppies, those are for PC's", "Wrong kind of floppy");
-
-        floppy_return(FLOP_STAT_NOCLMP);
-        FloppyIRQ(1);
         dc42_close_image(F);
         return -1;
     }
@@ -1978,9 +1790,6 @@ int floppy_insert(char *Image) // emulator should call this when user decides to
     if (F->numblocks > 1742)
     {
         messagebox("That's a very strangely sized disk!", "Wrong kind of floppy");
-
-        floppy_return(FLOP_STAT_NOCLMP);
-        FloppyIRQ(1);
         dc42_close_image(F);
         return -1;
     }
@@ -1989,7 +1798,7 @@ int floppy_insert(char *Image) // emulator should call this when user decides to
 
     if (floppy_ram[ROMVER]!=0x40 && F->ftype==0) 
     {
-        char message[] = "You are trying to use a Twiggy floppy image file in Lisa 2 mode. It is intended to be used in Lisa 1 mode, with Lisa 1 software. This may not end well.\n\n"
+        char message[] = "You are trying to use a Twiggy floppy image file in Lisa 2 mode, but it is intended to be used in Lisa 1 mode, with Lisa 1 software. This may not end well.\n\n"
             "Tips for booting from a Twiggy floppy disk image:\n"
             "  - In the File->Preferences menu, choose I/O ROM version 40 (there's no need to modify the Lisa ROM). "
             "Apply and restart the emulator.\n"
@@ -1999,7 +1808,7 @@ int floppy_insert(char *Image) // emulator should call this when user decides to
     }
     else if (floppy_ram[ROMVER]==0x40 && F->ftype!=0) 
     {
-        char message[] = "You are trying to use a Sony floppy image file in Lisa 1 mode. It is intended to be used in Lisa 2 mode, with Lisa 2 software. This may not end well.\n\n"
+        char message[] = "You are trying to use a Sony floppy image file in Lisa 1 mode, but it is intended to be used in Lisa 2 mode, with Lisa 2 software. This may not end well.\n\n"
             "Tips for booting from a Sony floppy disk image:\n"
             "  - In the File->Preferences menu, choose any I/O ROM version but 40 (there's no need to modify the Lisa ROM). "
             "Apply and restart the emulator.\n"
@@ -2008,52 +1817,41 @@ int floppy_insert(char *Image) // emulator should call this when user decides to
         messagebox(message, "This may not end well :(");
     }
 
-    if (F->ftype==0)
+    if (insert_in_upper_floppy_drive)
     {
-        ALERT_LOG(0, "Inserting a Twiggy floppy disk image in the upper drive 1 (with drive number 0x00) \n");
+        DEBUG_LOG(0, "Inserting a floppy disk image in the upper drive 1 (with drive number 0x00) \n");
         floppy_ram[FLOP_INT_STAT] |= (FLOP_IRQ_SRC_DSKIN1 | FLOP_IRQ_SRC_DRV1);
     }
     else
     {
-        ALERT_LOG(0, "Inserting a Sony floppy disk image in the lower drive 2 (or the only drive in Lisa 2 mode) (with drive number 0x80) \n");
+        DEBUG_LOG(0, "Inserting a floppy disk image in the lower drive 2 (or the only drive in Lisa 2 mode) (with drive number 0x80) \n");
         floppy_ram[FLOP_INT_STAT] |= (FLOP_IRQ_SRC_DSKIN2 | FLOP_IRQ_SRC_DRV2);
     }
-    // Old code: floppy_ram[0x2f] = 0x10 | 0x80;
+    fix_intstat_if_needed();
     floppy_ram[0x20] = 0xff;
-    fix_intstat(0);
 
-    floppy_return(0);
-
-    FloppyIRQ(1);
+    FloppyIRQ(HUN_THOUSANDTH_OF_A_SEC);
     floppy_FDIR = 1;
-
-    total_num_sectors_read = 0;
-    total_num_sectors_written = 0;
-
+    // Note: do not call floppy_return(0) because we are not executing a command.
     return 0;
 }
 
-// Set IRQ on RWTS completion, won't fire IRQ if the mask isn't right, that's handled in fix_intstat.
+// Set IRQ upon RWTS completion. Won't fire any IRQ if the interrupt mask isn't right.
 void RWTS_IRQ_SIGNAL(uint8 status) {
-    floppy_ram[FLOP_INT_STAT] |= ((floppy_ram[DRIVE] & 0x88) >> 1);
-    // Here is a more readable version of this: 
-    // floppy_ram[INTSTAT]|=((floppy_ram[DRIVE] & 0x80) ? 0x40:0); 
-    // floppy_ram[INTSTAT]|=((floppy_ram[DRIVE] & 0x08) ? 0x04:0);
-
-    fix_intstat(1);                                                 
-    floppy_return(status);         
-}
-
-// TorZidan: This seems to be called  with RWTS=0 or with RWTS=1; But the code does not use the actual value. 
-// So perhaps we can simplify the code and remove this argumen.
-void fix_intstat(int RWTS)
-{
-    uint8 intstat = floppy_ram[FLOP_INT_STAT];
-
-    // correct IRQ status if needed.
-    intstat &= 0x77;
-    intstat |= ((intstat & 0x70) ? 0x80 : 0) | ((intstat & 0x07) ? 0x08 : 0);
-    floppy_ram[FLOP_INT_STAT] = intstat;
+    if (floppy_ram[DRIVE] == 0x00)
+    {
+        floppy_ram[FLOP_INT_STAT] |= FLOP_IRQ_SRC_RWTS1; // Set this bit
+    }
+    else if (floppy_ram[DRIVE] == 0x80)
+    {
+        floppy_ram[FLOP_INT_STAT] |= FLOP_IRQ_SRC_RWTS2; // Set this bit
+    }
+    else
+    {
+        ALERT_LOG(0, "Invalid drive: %02x !\n");
+        status = FLOP_STAT_INVDRV;
+    }
+    fix_intstat_if_needed();
 
     floppy_ram[0x2e] = floppy_ram[FLOP_INT_MASK] & floppy_ram[FLOP_INT_STAT];
 
@@ -2061,38 +1859,58 @@ void fix_intstat(int RWTS)
     {
         DEBUG_LOG(0, "Will be Firing IRQ1 after delay since INTSTAT is %02x & INTMASK is %02x, 2e is :%02x\n",
                   floppy_ram[FLOP_INT_STAT], floppy_ram[FLOP_INT_MASK], floppy_ram[0x2e]);
-
-        FloppyIRQ(RWTS);
-        // floppy_FDIR=1; fdir_timer=cpu68k_clocks+HUNDRETH_OF_A_SECOND;
-        // IRQRingBufferAdd(IRQ_FDIR_ON, 0L);
+        FloppyIRQ(HUN_THOUSANDTH_OF_A_SEC);
     }
+    else
+    {
+       ALERT_LOG(0, "Will not be firing IRQ1 because: INTSTAT is %02x & INTMASK is %02x, 2e is zero :%02x\n",
+                  floppy_ram[FLOP_INT_STAT], floppy_ram[FLOP_INT_MASK], floppy_ram[0x2e]);
+    }
+
     if (floppy_6504_wait < 250)
         floppy_6504_wait = 0; // shut down diag wait
-
-    /*
-    7 set if bits 4,5,6 set
-    6 if RWTS is complete for drive 2                        upper
-    5 when button on drive 2 is pushed
-    4 when disk in place on drive 2
-
-    3 set if bits 0,1,2 set
-    2 set if RWTS complete for drive1
-    1 set when button on drive 1 is pushed
-    0 set when disk in place on drive 1                      lower
-    */
+    
+    floppy_return(status);
 }
 
-void floppy_button(uint8 floppynum) // press floppy button
+/**
+ * Sets bit 3 of floppy_ram[FLOP_INT_STAT], if any of bits 0,1,2 are set.
+ * Also, sets bit 7 if any of bits 4,5,6 are set.
+ */
+void fix_intstat_if_needed()
 {
-    floppy_ram[FLOP_INT_STAT] |= (floppynum ? 0x02 : 0x20);
-    fix_intstat(0);
+    uint8 intstat = floppy_ram[FLOP_INT_STAT];
+    // correct IRQ status if needed.
+    intstat &= 0x77;
+    intstat |= ((intstat & 0x70) ? 0x80 : 0) | ((intstat & 0x07) ? 0x08 : 0);
+    floppy_ram[FLOP_INT_STAT] = intstat;
+}
+
+// Unused, needs to be wired into the "skin" and menu items, to eject a floppy.
+// Another way: if booted into e.g. LOS3.1, you can eject a floppy using Lisa's menu.
+void floppy_button(uint8 pressed_upper_floppy_button) // press floppy eject button
+{
+    if (pressed_upper_floppy_button) 
+    {
+        floppy_ram[FLOP_INT_STAT] |= FLOP_IRQ_SRC_BTN1;
+    }
+    else
+    {
+        floppy_ram[FLOP_INT_STAT] |= FLOP_IRQ_SRC_BTN2;
+    }
+    fix_intstat_if_needed();
+    // Note: do not call floppy_return(0) because we are not executing a command.
 }
 
 void init_floppy(long iorom)
 {
-    current_floppy_image.RAM = NULL;
-    current_floppy_image.fd = -1;
-    current_floppy_image.fh = NULL;
+    current_upper_floppy_image.RAM = NULL;
+    current_upper_floppy_image.fd = -1;
+    current_upper_floppy_image.fh = NULL;
+
+    current_lower_floppy_image.RAM = NULL;
+    current_lower_floppy_image.fd = -1;
+    current_lower_floppy_image.fh = NULL;
 
     floppy_FDIR = 0;
     fdir_timer = -1;
@@ -2145,10 +1963,22 @@ void init_floppy(long iorom)
     floppy_ram[0x73] = 0xDE;
     floppy_ram[0x74] = 0xAA;
 
-    if (!!(floppy_ram[ROMVER] & 0x80))
+    if (iorom != 0x40)
         floppy_ram[TYPE] = (double_sided_floppy) ? SONY800KFLOPPY : SONY400KFLOPPY;
     else
         floppy_ram[TYPE] = TWIGGYFLOPPY;
+}
+
+uint8 is_upper_floppy_currently_inserted() {
+    return is_floppy_image_currently_inserted(&current_upper_floppy_image);
+}
+
+uint8 is_lower_floppy_currently_inserted() {
+    return is_floppy_image_currently_inserted(&current_lower_floppy_image);
+}
+
+uint8 is_floppy_image_currently_inserted(DC42ImageType *F) {
+    return (F->RAM == NULL)? 0:1;
 }
 
 void sector_checksum(void)

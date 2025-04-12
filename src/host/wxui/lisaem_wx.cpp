@@ -259,9 +259,13 @@ extern "C" void force_refresh(void);
 
 extern "C" void iw_enddocuments(void);
 
+extern "C" uint8 is_upper_floppy_currently_inserted(void);
+extern "C" uint8 is_lower_floppy_currently_inserted(void);
+
+
 // defined in in floppy.c:
 extern uint32 total_num_sectors_read;
-extern uint32 total_num_sectors_written; 
+extern uint32 total_num_sectors_written;
 
 void iw_check_finish_job(void);
 
@@ -273,6 +277,10 @@ void setvideomode(int mode);
 void save_global_prefs(void);
 
 int asciikeyboard = 1;
+
+// Used by the floppy drive routines to distinguish between a Lisa 1 with two floppy drives vs a Lisa 2 that has just one floppy drive.
+// Derived from the I/O ROM version (0x40 means Lisa 1, all others mean Lisa 2).
+static uint8 lisa_one_mode;
 
 #ifndef MIN
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -856,7 +864,7 @@ public:
 
   void OnFullScreen(wxCommandEvent &event);
 
-  void insert_floppy_anim(wxString openfile);
+  void insert_floppy_anim(wxString openfile, bool insert_in_upper_floppy_drive);
 
   // class LisaWin *win;
   int screensizex, screensizey;
@@ -1799,17 +1807,19 @@ void LisaEmFrame::Update_Status(long elapsed,long idleentry)
       s = "MHz";
     }
 
-    text.Printf(_T("CPU: %1.2f%s want:%1.2fMHz tick:%d, video refresh:%1.2f%s %c contrast:%02x %s %x%x:%x%x:%x%x.%x @%d/%08x clk_cycles:%lld FloppySectors_R/W:%d/%d"),
-                mhzactual, c, throttle, emulation_tick,
-                vidhz, s, (videoramdirty ? 'd' : ' '),
-                contrast,
-                debug_log_enabled ? "TRACELOG" : "",
-                lisa_clock.hours_h, lisa_clock.hours_l,
-                lisa_clock.mins_h, lisa_clock.mins_l,
-                lisa_clock.secs_h, lisa_clock.secs_l,
-                lisa_clock.tenths,
-                context, pc24, cpu68k_clocks,
-                total_num_sectors_read, total_num_sectors_written);
+    text.Printf(_T("CPU: %1.2f%s want:%1.2fMHz tick:%d, video refresh:%1.2f%s %c contrast:%02x %s %x%x:%x%x:%x%x.%x @%d/%08x "
+        "clk_cycles:%lld Floppy_sectors_R/W:%d/%d"),
+        mhzactual, c, throttle, emulation_tick,
+        vidhz, s, (videoramdirty ? 'd' : ' '),
+        contrast,
+        debug_log_enabled ? "TRACELOG" : "",
+        lisa_clock.hours_h, lisa_clock.hours_l,
+        lisa_clock.mins_h, lisa_clock.mins_l,
+        lisa_clock.secs_h, lisa_clock.secs_l,
+        lisa_clock.tenths,
+        context, pc24, cpu68k_clocks,
+        total_num_sectors_read, total_num_sectors_written
+      );
 
     SetStatusBarText(text);
     screen_paint_update = 0;
@@ -1845,7 +1855,7 @@ void LisaEmFrame::Update_Status(long elapsed,long idleentry)
       {
         char s[1024];
         strncpy(s, on_start_floppy.mb_str(wxConvUTF8), 1023);
-        floppy_insert(s);
+        floppy_insert(s, lisa_one_mode);
         wxMilliSleep(100); // wait for insert sound to complete to prevent crash.
         my_lisaframe->floppy_to_insert = _T("");
         on_start_floppy = "";
@@ -1943,7 +1953,7 @@ bool DnDFile::OnDropFiles(wxCoord x, wxCoord y, const wxArrayString& filenames)
     if (filesize > 400 * 1024)
     {
       fclose(file);
-      my_lisaframe->insert_floppy_anim(wxfilename);
+      my_lisaframe->insert_floppy_anim(wxfilename, lisa_one_mode);
       free(filename);
       return true;
     }
@@ -2054,9 +2064,11 @@ void LisaEmFrame::OnEmulationTimer(wxTimerEvent& event)
       if (cpu68k_clocks < 10 && floppy_to_insert.Len()) // deferred floppy insert.
       {
         const wxCharBuffer s = CSTR(floppy_to_insert);
-        int i = floppy_insert((char *)(const char *)s);
+        // TODO(TorZindan): If a floppy is inserted before lisa is being powered on, upon power on something plays
+        // an "eject" animattion, which is wrong: the floppy should remain inserted.
+        int i = floppy_insert((char *)(const char *)s, lisa_one_mode);
         floppy_to_insert = _T("");
-        if (i)
+        if (i != 0)
           eject_floppy_animation();
       }
 
@@ -8158,7 +8170,7 @@ void LisaEmFrame::OnFLOPPY(wxCommandEvent& WXUNUSED(event)) {
 
 
 
-void LisaEmFrame::insert_floppy_anim(wxString openfile)
+void LisaEmFrame::insert_floppy_anim(wxString openfile, bool insert_in_upper_floppy_drive)
 {
     if (!openfile.Len())
       return;
@@ -8166,36 +8178,68 @@ void LisaEmFrame::insert_floppy_anim(wxString openfile)
 
     if (my_lisaframe->running)
     {
-      if (floppy_insert((char *)(const char *)s))
-        return;
+      if (floppy_insert(((char *)(const char *) s), insert_in_upper_floppy_drive? 1:0))
+        return; // the insert failed
     }
     else
     {
       floppy_to_insert = openfile;
     }
 
-    if ((my_lisawin->floppystate & FLOPPY_ANIM_MASK) == FLOPPY_EMPTY)
-    {
-      // initiate insert animation sequence
-      my_lisawin->floppystate = FLOPPY_NEEDS_REDRAW | FLOPPY_ANIMATING | FLOPPY_INSERT_0;
+    // play a flopy insert animation only for the top floppy in Lisa 1 mode and for the one-and-only bottom floppy in Lisa 2 mode:
+    if ((lisa_one_mode && insert_in_upper_floppy_drive) || !lisa_one_mode) {
+      if ((my_lisawin->floppystate & FLOPPY_ANIM_MASK) == FLOPPY_EMPTY)
+        {
+          // initiate insert floppy animation sequence
+          my_lisawin->floppystate = FLOPPY_NEEDS_REDRAW | FLOPPY_ANIMATING | FLOPPY_INSERT_0;
+      }
     }
 }
 
 
 void LisaEmFrame::OnxFLOPPY(void)
 {
-    if ((my_lisawin->floppystate & FLOPPY_ANIM_MASK) != FLOPPY_EMPTY)
+    bool is_shift_key_down = false;
+    if (wxGetKeyState(WXK_SHIFT)) {
+      is_shift_key_down = true;
+      ALERT_LOG(0, "'Insert Diskette' menu item clicked with Shift key down, which means 'insert it in the lower drive 2 in Lisa 1 mode'");
+    }
+
+    if (lisa_one_mode && is_shift_key_down && my_lisaframe->running == emulation_off)
+    {
+      wxMessageBox(_T("For simplicity, you can't insert a floppy in the lower drive 2 while Lisa is off. "
+        "Please turn it on and try again."),
+        _T("Please turn on the Lisa first!"), wxICON_INFORMATION | wxOK);
+      return;
+    }
+    else if (lisa_one_mode && !is_shift_key_down && is_upper_floppy_currently_inserted()) 
+    {
+      wxMessageBox(_T("A previously inserted diskette is still in the upper drive 1. "
+        "Please eject the diskette before inserting another.\n\n"
+        "Tip: if you want to insert a diskette in the lower drive 2, hold the 'Shift' key and then click on the File->Insert diskette Menu."),
+        _T("Diskette is already inserted!"), wxICON_INFORMATION | wxOK);
+      return;
+
+    } 
+    else if (lisa_one_mode && is_shift_key_down && is_lower_floppy_currently_inserted()) 
+    {
+      wxMessageBox(_T("A previously inserted diskette is still in the lower drive 2. "
+        "Please eject the diskette before inserting another."),
+        _T("Diskette is already inserted!"), wxICON_INFORMATION | wxOK);
+      return;
+    } 
+    else if(!lisa_one_mode && is_lower_floppy_currently_inserted()) 
     {
       wxMessageBox(_T("A previously inserted diskette is still in the drive. "
-                      "Please eject the diskette before inserting another."),
-                   _T("Diskette is already inserted!"), wxICON_INFORMATION | wxOK);
+        "Please eject the diskette before inserting another."),
+        _T("Diskette is already inserted!"), wxICON_INFORMATION | wxOK);
       return;
     }
 
     pause_run();
 
     wxString openfile;
-    wxFileDialog open(this, wxT("Insert a Lisa diskette"),
+    wxFileDialog open(this, lisa_one_mode? wxT("Insert a Lisa Twiggy diskette") : wxT("Insert a Lisa Sony diskette"),
                       wxEmptyString,
                       wxEmptyString,
                       //                                                wxT("Disk Copy (*.dc42)|*.dc42|DART (*.dart)|*.dart|Image (*.image)|*.image|All (*.*)|*.*"),
@@ -8206,7 +8250,9 @@ void LisaEmFrame::OnxFLOPPY(void)
       openfile = open.GetPath();
 
     resume_run();
-    insert_floppy_anim(openfile);
+
+    bool insert_in_upper_floppy_drive = (lisa_one_mode && !is_shift_key_down);
+    insert_floppy_anim(openfile, insert_in_upper_floppy_drive);
 }
 
 
@@ -8222,11 +8268,40 @@ void LisaEmFrame::OnxNewFLOPPY(void)
       return;
     }
 
-    if ((my_lisawin->floppystate & FLOPPY_ANIM_MASK) != FLOPPY_EMPTY)
+    bool is_shift_key_down = false;
+    if (wxGetKeyState(WXK_SHIFT)) {
+      is_shift_key_down = true;
+      ALERT_LOG(0, "'Insert blank diskette' menu item clicked with Shift key down!");
+    }
+
+    if (lisa_one_mode && is_shift_key_down && my_lisaframe->running == emulation_off)
+    {
+      wxMessageBox(_T("For simplicity, you can't insert a floppy in the lower drive 2 while Lisa is off. "
+        "Please turn it on and try again."),
+        _T("Please turn on the Lisa first!"), wxICON_INFORMATION | wxOK);
+      return;
+    }
+    else if (lisa_one_mode && !is_shift_key_down && is_upper_floppy_currently_inserted()) 
+    {
+      wxMessageBox(_T("A previously inserted diskette is still in the upper drive 1. "
+        "Please eject the diskette before inserting another.\n\n"
+        "Tip: if you want to insert a diskette in the lower drive 2, hold the 'Shift' key and then click on the File->Insert diskette Menu."),
+        _T("Diskette is already inserted!"), wxICON_INFORMATION | wxOK);
+      return;
+
+    } 
+    else if (lisa_one_mode && is_shift_key_down && is_lower_floppy_currently_inserted()) 
+    {
+      wxMessageBox(_T("A previously inserted diskette is still in the lower drive 2. "
+        "Please eject the diskette before inserting another."),
+        _T("Diskette is already inserted!"), wxICON_INFORMATION | wxOK);
+      return;
+    } 
+    else if(!lisa_one_mode && is_lower_floppy_currently_inserted()) 
     {
       wxMessageBox(_T("A previously inserted diskette is still in the drive. "
-                      "Please eject the diskette before inserting another."),
-                   _T("Diskette is already inserted!"), wxICON_INFORMATION | wxOK);
+        "Please eject the diskette before inserting another."),
+        _T("Diskette is already inserted!"), wxICON_INFORMATION | wxOK);
       return;
     }
 
@@ -8246,7 +8321,11 @@ void LisaEmFrame::OnxNewFLOPPY(void)
       return;
 
     const wxCharBuffer s = CSTR(openfile);
-    int i = dc42_create((char *)(const char *)s, "-not a Macintosh disk-", 400 * 512 * 2, 400 * 2 * 12);
+
+    // TODO(TorZidan@): if the "double_sided_floppy" global var is set, create a new 800k floppy image below.
+    uint32 new_image_num_sectors_per_side = (lisa_one_mode)? 851:400; // Twiggy floppies have 851 sectors per side; Sony have 400.
+    int i = dc42_create((char *)(const char *)s, "-not a Macintosh disk-", 
+      new_image_num_sectors_per_side * 512 * 2, new_image_num_sectors_per_side * 2 * 12);
     if (i)
     {
       wxMessageBox(_T("Could not create the diskette"),
@@ -8255,13 +8334,18 @@ void LisaEmFrame::OnxNewFLOPPY(void)
     }
     else
     {
-      floppy_insert((char *)(const char *)s);
+      bool insert_in_upper_floppy_drive = (lisa_one_mode && !is_shift_key_down);
+      floppy_insert((char *)(const char *)s, insert_in_upper_floppy_drive);
     }
 
-    if ((my_lisawin->floppystate & FLOPPY_ANIM_MASK) == FLOPPY_EMPTY)
+    // play a flopy insert animation only for the top floppy in Lisa 1 mode and for the one-and-only bottom floppy in Lisa 2 mode:
+    if ((lisa_one_mode && !is_shift_key_down) || !lisa_one_mode) 
     {
-      // initiate insert animation sequence
-      my_lisawin->floppystate = FLOPPY_NEEDS_REDRAW | FLOPPY_ANIMATING | FLOPPY_INSERT_0;
+      if ((my_lisawin->floppystate & FLOPPY_ANIM_MASK) == FLOPPY_EMPTY)
+      {
+        // initiate insert animation sequence
+        my_lisawin->floppystate = FLOPPY_NEEDS_REDRAW | FLOPPY_ANIMATING | FLOPPY_INSERT_0;
+      }
     }
 }
 
@@ -9460,9 +9544,9 @@ int romlessboot_pick(void) //returns 0=profile, 1=floppy
     {
       char s[1024];
       strncpy(s, on_start_floppy.mb_str(wxConvUTF8), 1023);
-      int i = floppy_insert(s);
+      int i = floppy_insert(s, lisa_one_mode);
       wxMilliSleep(100); // wait for insert sound to complete to prevent crash.
-      if (i)
+      if (i != 0)
       {
         eject_floppy_animation();
         return -1;
@@ -9505,9 +9589,9 @@ int romlessboot_pick(void) //returns 0=profile, 1=floppy
         my_lisaframe->OnxFLOPPY();
       if (!my_lisaframe->floppy_to_insert.Len())
         return -1; // if the user hasn't picked a floppy, abort.
-      int i = floppy_insert(CSTR(my_lisaframe->floppy_to_insert));
+      int i = floppy_insert(CSTR(my_lisaframe->floppy_to_insert), lisa_one_mode);
       wxMilliSleep(100); // wait for insert sound to complete to prevent crash.
-      if (i)
+      if (i != 0)
       {
         eject_floppy_animation();
         return -1;
@@ -9600,7 +9684,8 @@ int initialize_all_subsystems(void)
     serial_b = 0;
 
     floppy_iorom = my_lisaconfig->iorom;
-    init_floppy(my_lisaconfig->iorom);
+    lisa_one_mode = (floppy_iorom == 0x40)? 1:0;
+    init_floppy(floppy_iorom);
 
     bitdepth = 8; // have to get this from the X Server side...
 
