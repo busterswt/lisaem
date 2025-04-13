@@ -43,24 +43,24 @@ cd ~
 git clone https://github.com/arcanebyte/lisaem.git
 ```
 
-This will download the latest LisaEm sources into new subfolder `LisaEm`.
+This will download the latest LisaEm sources into new subfolder `lisaem`.
 
 ## 4. Download and build the wxWidgets binaries
 Run the following commands in Cygwin:
 
 ```
-cd ~/LisaEm/scripts
-./build-wx3.1.5-cygwin-windows.sh
+cd ~/lisaem/scripts
+./build-wx3.2.7-cygwin-windows.sh
 ```
 
-This will download file `wxWidgets-3.1.5.tar.bz2` , expand it into subfolder `wxWidgets-3.1.5`, build it in subfolder `wxWidgets-3.1.5/build-msw`, install wxWidgets into folder `/usr/local/wx3.1.5-msw` and delete the temporary build folder above. Upon success, it should print e.g. `Default config is msw-unicode-static-3.1`.
+This will download file `wxWidgets-3.2.7.tar.bz2` from https://github.com/wxwidgets/wxwidgets/releases , expand it into subfolder `wxWidgets-3.2.7`, build it in subfolder `wxWidgets-3.2.7/build-msw`, install wxWidgets into folder `/usr/local/wx3.2.7-msw` and delete the temporary build folder above. Upon success, it should print e.g. `Default config is msw-unicode-static-3.1`.
 
 ## 5. Build the LisaEm binaries
 Run the following commands in Cygwin:
 
 ```
-cd ~/LisaEm
-./build.sh build
+cd ~/lisaem
+./build.sh clean build
 ```
 
 This will compile and generate the LisaEm executable file `bin/lisaem.exe`, along with other tools in the same `bin` subfolder.
@@ -71,10 +71,10 @@ This will compile and generate the LisaEm executable file `bin/lisaem.exe`, alon
   The LisaEm build system comes with the "build install" command, which creates folder `C:\Program Files\Sunder.NET\LisaEm` and copies the necessary LisaEm files into it. It does not do anything else than that (does not create any other files, does not create desktop or startup menu shortcuts, does not modify the Windows registry). Run the following commands in Cygwin:
   
   ```
-  cd ~/LisaEm
+  cd ~/lisaem
   ./build.sh install
   ```
-  
+
   Follow the prompts. It will launch a separate "mintty.exe" command window "As Administrator", so that it would be able to write into folder C:\Program Files\Sunder.NET\LisaEm.
 
   ### Option 2: Install it manually, by running a set of commands in Cygwin
@@ -91,10 +91,12 @@ This will compile and generate the LisaEm executable file `bin/lisaem.exe`, alon
   ```
 
 ## Running the LisaEm emulator
-Open Windows File Explorer and navigate to your installation folder (e.g. `C:\Program Files\Sunder.NET\LisaEm`) and double-click on LisaEm.exe to launch it.
+You don't need Cygwin in order to run LisaEm. Open Windows File Explorer, navigate to your installation folder (e.g. `C:\Program Files\Sunder.NET\LisaEm`) and double-click on LisaEm.exe to launch it.
 
 At first start, it will create the emulator "preferences" file `C:\Users\<Your Windows User>\AppData\Roaming\lisaem.conf`.
 This way, regardless of how / from where you've started the emulator, it will always find this config file.
+
+Does the Lisa feel sluggish? No problem! Go to the "Throttle" menu, and choose how fast do you want it to be, e.g. change it from the default 5 Mhz to 256 Mhz. Restart.
 
 ## Uninstalling LisaEm
 To reduce the risk of deleting "too much" by mistake, we have not implemented a "build uninstall" command.

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-# This script downloads the wxWidgets-3.1.5.tar.bz2 source archive file from
-# https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.5/wxWidgets-3.1.5.tar.bz2
-# , extracts it into subfolder "wxWidgets-3.1.5",
-# then builds wxWidgets into subfolder "wxWidgets-3.1.5/build-msw",
-# and finally installs wxWidgets into folder "/usr/local/wx3.1.5-msw",
+# This script downloads the wxWidgets-3.2.7.tar.bz2 source archive file from
+# https://github.com/wxWidgets/wxWidgets/releases/download/v3.2.7/wxWidgets-3.2.7.tar.bz2
+# , extracts it into subfolder "wxWidgets-3.2.7",
+# then builds wxWidgets into subfolder "wxWidgets-3.2.7/build-msw",
+# and finally installs wxWidgets into folder "/usr/local/wx3.2.7-msw",
 # 
 # Note: on a normal Linux installation, you will need to "sudo" in order to write to folder
 # /usr/local ; however, Cygwin uses the Windows folder permissons model; so if you
@@ -30,8 +30,8 @@
 [[ -z "$WINDMC"  ]] && export WINDMC=/bin/x86_64-w64-mingw32-windmc.exe
 [[ -z "$WINDRES" ]] && export WINDRES=/bin/x86_64-w64-mingw32-windres.exe
 
-for VER in 3.1.5; do
-#for VER in 3.0.2 3.0.4 3.1.0 3.1.1 3.1.2 3.1.3 3.1.4 3.1.5; do
+for VER in 3.2.7; do
+#for VER in 3.0.2 3.0.4 3.1.0 3.1.1 3.1.2 3.1.3 3.1.4 3.1.5 3.2.7; do
   export TYPE=msw
   export VER
 
@@ -53,8 +53,9 @@ for VER in 3.1.5; do
                --prefix=/usr/local/wx${VER}-${TYPE} \
   	     && make -j $( nproc ) && make -j $( nproc ) install || exit 2
 
+  rm /usr/local/bin/wx-config 2> /dev/null
   ln -s /usr/local/wx${VER}-${TYPE}/bin/wx-config /usr/local/bin/wx-config
 
-  # Test the installation, it should print e.g. "Default config is msw-unicode-static-3.1"
+  # Test the installation, it should print e.g. "Default config is msw-unicode-static-3.2"
   /usr/local/bin/wx-config --list
 done
