@@ -1551,7 +1551,7 @@ int dc42_create(char *filename, char *volname, uint32 datasize, uint32 tagsize) 
 
    FILE *newimage;
    char pascalstring[64];
-   uint8 i, dskformat, formatbyte;
+   uint8 i, diskencoding, formatbyte;
 
    newimage = fopen(filename, "wb");
    if (!newimage)
@@ -1591,33 +1591,29 @@ int dc42_create(char *filename, char *volname, uint32 datasize, uint32 tagsize) 
    fputc(0, newimage);
    fputc(0, newimage);
 
-   dskformat = 93;
-   formatbyte = 0x22;
+   diskencoding = 0x03; // 0x00 = Sony400k, 0x01 = Sony800k, 0x54 = Twiggy, 0x02 and 0x03 are for MFM disks
+   formatbyte = 0x96; // 0x01 = Twiggy, 0x02 = Sony400k, 0x22 = Sony800k, 0x96 = Invalid
    if (datasize == 800 * 512 && tagsize == 800 * 12)
    {
-      dskformat = 0;
-      formatbyte = 0x12;
+      // Sony400k:
+      diskencoding = 0x00;
+      formatbyte = 0x02;
    }
-   if (datasize == 1600 * 512 && tagsize == 1600 * 12)
-      dskformat = 1;
-
-   if (datasize == 800 * 512 && tagsize == 0)
+   else if (datasize == 1600 * 512 && tagsize == 1600 * 12)
    {
-      dskformat = 0;
-      formatbyte = 0x12;
+      // Sony800k:
+      diskencoding = 0x01;
+      formatbyte = 0x22;
    }
-   if (datasize == 1600 * 512 && tagsize == 0)
-      dskformat = 1;
-   if (datasize == 720 * 1024 && tagsize == 0)
-      dskformat = 2;
-   if (datasize == 1440 * 1024 && tagsize == 0)
-      dskformat = 3;
+   else if (datasize == 1702 * 512 && tagsize == 1702 * 12)
+   {
+      // Twiggy:
+      diskencoding = 0x54;
+      formatbyte = 0x01;
+   }
 
-   if (dskformat == 93)
-      formatbyte = 0x93; // non-standard disk image
-
-   fputc(dskformat, newimage);  // diskformat
-   fputc(formatbyte, newimage); // diskformat
+   fputc(diskencoding, newimage);  // disk encoding 
+   fputc(formatbyte, newimage); // format byte
 
    fputc(1, newimage);
    fputc(0, newimage); // private flag

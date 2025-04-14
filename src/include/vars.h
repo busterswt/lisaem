@@ -1722,7 +1722,7 @@ extern int get_address_mmu_rfn_type(uint32 addr);
 extern void reg68k_sanity_check_bitorder(void);
 
 extern char *mspace(lisa_mem_t fn);
-extern int floppy_insert(char *Image);
+extern int floppy_insert(char *Image, uint8 insert_in_upper_floppy_drive);
 extern void apple_1(void);
 extern void apple_2(void);
 extern void apple_3(void);
