@@ -279,34 +279,6 @@ uint8 cmp_screen_hash(uint8 *hashtable1, uint8 *hashtable2)
   return count;
 }
 
-static int mouse_vector_selector = 0;
-
-void switch_mouse_vector(void)
-{
-  mouse_vector_selector++;
-  switch (mouse_vector_selector)
-  {
-  default:
-    mouse_vector_selector = 0; /* FALLTHRU */
-  case 0:
-    lisa_os_mouse_x_ptr = 0x486;
-    lisa_os_mouse_y_ptr = 0x488;
-    break;
-  case 1:
-    lisa_os_mouse_x_ptr = 0xcc00f0;
-    lisa_os_mouse_y_ptr = 0xcc00f2;
-    break;
-  case 2:
-    lisa_os_mouse_x_ptr = 0xfec;
-    lisa_os_mouse_y_ptr = 0xfee;
-    break;
-  case 3:
-    lisa_os_mouse_x_ptr = 0x82e;
-    lisa_os_mouse_y_ptr = 0x82c;
-    break;
-  }
-}
-
 #define LISA_ROM_RUNNING 0
 #define LISA_OFFICE_RUNNING 1
 #define LISA_TEST_RUNNING 2
@@ -350,17 +322,28 @@ int check_running_lisa_os(void)
     DEBUG_LOG(0, "Lisa ROM v1:%08x v2:%08x", v1, v2);
     return running_lisa_os;
   }
-  else if (((v1 & 0x00ff0000) == 0x00520000 && (v2 & 0x00ff0000) == 0x00520000) || // Lisa OS 3.x + Workshop
-           ((v1 & 0x00ff0000) == 0x00500000 && (v2 & 0x00ff0000) == 0x00500000))   // LOS 1.2
+  else if ((v1 & 0x00ff0000) == 0x00500000 && (v2 & 0x00ff0000) == 0x00500000)
   {
-    // LOS 1.2: v1=0050080e v2=0050098c; test1,2,3: 426effe8, e5402070, 00363d68
+    // LOS 1.0 or 1.2: v1=0050080e v2=0050098c; test1,2,3: 426effe8, e5402070, 00363d68
     // if (lisa_os_mouse_x_ptr!=0x00cc00f0) ALERT_LOG(0,"Mouse vector changed from %08x,%08x to cc00f0",lisa_os_mouse_x_ptr,lisa_os_mouse_y_ptr);
-    lisa_os_mouse_x_ptr = 0x00cc00f0;
-    lisa_os_mouse_y_ptr = 0x00cc00f2;
+    lisa_os_mouse_x_ptr = 0x00cc00ea;
+    lisa_os_mouse_y_ptr = 0x00cc00ec;
+    mouse_x_tolerance = 4;
+    mouse_y_tolerance = 4;
+    running_lisa_os = LISA_OFFICE_RUNNING;   
+    DEBUG_LOG(0, "Lisa Office System version 1.0 or 1.2 : v1:%08x v2:%08x", v1, v2);
+    return running_lisa_os;
+  }
+  else if ((v1 & 0x00ff0000) == 0x00520000 && (v2 & 0x00ff0000) == 0x00520000)
+  {
+    // LOS 2.0 or 3.0 or 3.1 or Workshop 3: v1=005208a6 v2=00520a50; test1,2,3: 67202054, 0000226e, 001630ae
+    // if (lisa_os_mouse_x_ptr!=0x00cc00f0) ALERT_LOG(0,"Mouse vector changed from %08x,%08x to cc00f0",lisa_os_mouse_x_ptr,lisa_os_mouse_y_ptr);
+    lisa_os_mouse_x_ptr = 0x00cc00f0; 
+    lisa_os_mouse_y_ptr = 0x00cc00f2; 
     mouse_x_tolerance = 4;
     mouse_y_tolerance = 4;
     running_lisa_os = LISA_OFFICE_RUNNING;
-    DEBUG_LOG(0, "Lisa Office System v1:%08x v2:%08x", v1, v2);
+    DEBUG_LOG(0, "Lisa Office System versions 2&3 : v1:%08x v2:%08x", v1, v2);
     return running_lisa_os;
   }
   else if (((v1 & 0x00ff0000) == 0x00ec0000 && (v2 & 0x00fff000) == 0x00ec0000) || // LisaTest - this one might be wrong!
@@ -436,7 +419,14 @@ int check_running_lisa_os(void)
         DEBUG_LOG(0, "UniPlus sunix v1.1 kernel Running: v1=%08x v2=%08x", v1, v2);
         return running_lisa_os;
       }
-  // LOS 1.2: v1=0050080e v2=0050098c; test1,2,3: 426effe8, e5402070, 00363d68
+      else if ((v1 & 0x00ffffff) == 0x000e2980 && (v2 & 0x00ffffff) == 0x000e2ad2) // Smalltalk -  v1=000e2980 v2=000e2ad2
+      {
+        lisa_os_mouse_x_ptr = 0x000010ea;
+        lisa_os_mouse_y_ptr = 0x000010ec;
+        running_lisa_os = LISA_SMALLTALK_RUNNING;
+        DEBUG_LOG(0, "Smalltalk Running: v1=%08x v2=%08x", v1, v2);
+        return running_lisa_os;
+      }
   // src/lisa/motherboard/glue.c:check_running_lisa_os:382:Unknown OS Running: v1=0001c4ac v2=0001c4b0| 20:10:38.8 441279005
 
   abort_opcode = 2;
