@@ -5,7 +5,7 @@ env:
   PATH: "/usr/local/wx3.2.1-gtk/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
 
 jobs:
-  smoke-deploy:
+  ubuntu-2404-smoke-deploy:
     runs-on: [self-hosted, linux, x64]
     steps:
       - name: Checkout repository
