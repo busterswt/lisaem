@@ -279,12 +279,16 @@ uint8 cmp_screen_hash(uint8 *hashtable1, uint8 *hashtable2)
   return count;
 }
 
+// (jamesdenton) Defined in vars.h but re-defined here
 #define LISA_ROM_RUNNING 0
 #define LISA_OFFICE_RUNNING 1
 #define LISA_TEST_RUNNING 2
 #define LISA_MACWORKS_RUNNING 3
 #define LISA_MONITOR_RUNNING 4
 #define LISA_XENIX_RUNNING 5
+#define LISA_UNIPLUS_RUNNING 6
+#define LISA_UNIPLUS_SUNIX_RUNNING 7
+#define LISA_SMALLTALK_RUNNING 8
 #define UNKNOWN_OS_RUNNING 100
 
 // remove me
@@ -343,7 +347,7 @@ int check_running_lisa_os(void)
     mouse_x_tolerance = 4;
     mouse_y_tolerance = 4;
     running_lisa_os = LISA_OFFICE_RUNNING;
-    DEBUG_LOG(0, "Lisa Office System versions 2&3 : v1:%08x v2:%08x", v1, v2);
+    DEBUG_LOG(0, "Lisa Office System versions 2.x or 3.x : v1:%08x v2:%08x", v1, v2);
     return running_lisa_os;
   }
   else if (((v1 & 0x00ff0000) == 0x00ec0000 && (v2 & 0x00fff000) == 0x00ec0000) || // LisaTest - this one might be wrong!

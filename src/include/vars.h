@@ -938,6 +938,7 @@ GLOBAL(int, has_lisa_xl_screenmod, 0);
 #define LISA_XENIX_RUNNING 5
 #define LISA_UNIPLUS_RUNNING 6
 #define LISA_UNIPLUS_SUNIX_RUNNING 7
+#define LISA_SMALLTALK_RUNNING 8
 #define UNKNOWN_OS_RUNNING 100
 
 GLOBAL(int, running_lisa_os, LISA_ROM_RUNNING);
