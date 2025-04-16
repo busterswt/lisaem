@@ -1,6 +1,6 @@
 # LisaEm - An Apple Lisa Emulator
 
-[![run-script](https://github.com/arcanebyte/lisaem/actions/workflows/workflow.yaml/badge.svg?branch=master)](https://github.com/arcanebyte/lisaem/actions/workflows/workflow.yaml)
+[![Build (Ubuntu 24.04)](https://github.com/arcanebyte/lisaem/actions/workflows/workflow.yaml/badge.svg?branch=master)](https://github.com/arcanebyte/lisaem/actions/workflows/workflow.yaml)
 
 Copyright © 1998-2022 by Ray Arachelian, All Rights Reserved.  
 Copyright © 2023-2025 by Friends of Ray Arachelian.  
