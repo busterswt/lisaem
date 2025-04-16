@@ -1,4 +1,4 @@
-name: Build (Ubuntu 24.04)
+name: run-script
 on: pull_request
 
 env:
