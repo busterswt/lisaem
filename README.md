@@ -1,7 +1,9 @@
 # LisaEm - An Apple Lisa Emulator
 
-Copyright © 2022 by Ray Arachelian, All Rights Reserved.  
-Copyright © 2023 by Friends of Ray Arachelian.  
+[![run-script](https://github.com/arcanebyte/lisaem/actions/workflows/workflow.yaml/badge.svg?branch=master)](https://github.com/arcanebyte/lisaem/actions/workflows/workflow.yaml)
+
+Copyright © 1998-2022 by Ray Arachelian, All Rights Reserved.  
+Copyright © 2023-2025 by Friends of Ray Arachelian.  
 Released under the terms of the [GNU Public License v3](https://www.gnu.org/licenses/gpl-3.0.txt).
 
 ------------------------------------------------------------------------------
