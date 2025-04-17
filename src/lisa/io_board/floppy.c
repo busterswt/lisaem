@@ -1886,11 +1886,17 @@ void fix_intstat_if_needed()
     floppy_ram[FLOP_INT_STAT] = intstat;
 }
 
-// Unused, needs to be wired into the "skin" and menu items, to eject a floppy.
-// Another way: if booted into e.g. LOS3.1, you can eject a floppy using Lisa's menu.
-void floppy_button(uint8 pressed_upper_floppy_button) // press floppy eject button
+/**
+ * This is called from lisaem_wx.cpp when the user pressed the floppy eject button.
+ * It fires a Floppy IRQ with the proper "floppy eject requested" bit set.
+ * The Lisa software intercepts the IRQ, sends a "floppy eject" command FLOP_CMD_UCLAMP,
+ * and we process it (elsewhere in floppy.c) and eject the floppy.
+ * Note: Lisa may refuse to do anything with this IRQ, and hence it will not eject the floppy. This is evident at the BIOS boot menu screen.
+ * Note: there is another way to eject a floppy: if we are booted into e.g. LOS3.1, we can eject a floppy using Lisa's menu.
+ */
+void floppy_eject_button_pressed(uint8 on_upper_floppy_drive)
 {
-    if (pressed_upper_floppy_button) 
+    if (on_upper_floppy_drive) 
     {
         floppy_ram[FLOP_INT_STAT] |= FLOP_IRQ_SRC_BTN1;
     }
@@ -1899,7 +1905,9 @@ void floppy_button(uint8 pressed_upper_floppy_button) // press floppy eject butt
         floppy_ram[FLOP_INT_STAT] |= FLOP_IRQ_SRC_BTN2;
     }
     fix_intstat_if_needed();
-    // Note: do not call floppy_return(0) because we are not executing a command.
+    // Note: do not call floppy_return(0) because we are not executing any command.
+    FloppyIRQ(HUN_THOUSANDTH_OF_A_SEC);
+    floppy_FDIR = 1;
 }
 
 void init_floppy(long iorom)

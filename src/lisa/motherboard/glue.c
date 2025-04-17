@@ -288,7 +288,6 @@ uint8 cmp_screen_hash(uint8 *hashtable1, uint8 *hashtable2)
 #define LISA_XENIX_RUNNING 5
 #define LISA_UNIPLUS_RUNNING 6
 #define LISA_UNIPLUS_SUNIX_RUNNING 7
-#define LISA_SMALLTALK_RUNNING 8
 #define UNKNOWN_OS_RUNNING 100
 
 // remove me

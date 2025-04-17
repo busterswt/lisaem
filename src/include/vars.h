@@ -938,7 +938,6 @@ GLOBAL(int, has_lisa_xl_screenmod, 0);
 #define LISA_XENIX_RUNNING 5
 #define LISA_UNIPLUS_RUNNING 6
 #define LISA_UNIPLUS_SUNIX_RUNNING 7
-#define LISA_SMALLTALK_RUNNING 8
 #define UNKNOWN_OS_RUNNING 100
 
 GLOBAL(int, running_lisa_os, LISA_ROM_RUNNING);
@@ -1724,6 +1723,7 @@ extern void reg68k_sanity_check_bitorder(void);
 
 extern char *mspace(lisa_mem_t fn);
 extern int floppy_insert(char *Image, uint8 insert_in_upper_floppy_drive);
+extern void floppy_eject_button_pressed(uint8 on_upper_floppy_drive) ;
 extern void apple_1(void);
 extern void apple_2(void);
 extern void apple_3(void);
