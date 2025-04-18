@@ -288,7 +288,6 @@ uint8 cmp_screen_hash(uint8 *hashtable1, uint8 *hashtable2)
 #define LISA_XENIX_RUNNING 5
 #define LISA_UNIPLUS_RUNNING 6
 #define LISA_UNIPLUS_SUNIX_RUNNING 7
-#define LISA_SMALLTALK_RUNNING 8
 #define UNKNOWN_OS_RUNNING 100
 
 // remove me
@@ -361,15 +360,27 @@ int check_running_lisa_os(void)
     DEBUG_LOG(0, "LisaTest v1:%08x v2:%08x", v1, v2);
     return running_lisa_os;
   }
-  else if (
-    ((v1 & 0x000ff000) == 0x000e3000 && (v2 & 0x000ff000) == 0x000e3000) ||  // Lisa Monitor v11.0 - v1=000e32e6 v2=000e3330, Lisa Monitor v11.1 - v1=000e32e6 v2=000e3330
-    ((v1 & 0x000ff000) == 0x000e2000 && (v2 & 0x000ff000) == 0x000e2000))    // Lisa Monitor v11.8 - v1=000e2980 v2=000e2ad2
+  else if ((v1 & 0x000ff000) == 0x000e3000 && (v2 & 0x000ff000) == 0x000e3000) // Lisa Monitor v11.0 - v1=000e32e6 v2=000e3330, Lisa Monitor v11.1 - v1=000e32e6 v2=000e3330
   {
-    // if (lisa_os_mouse_x_ptr!=0x00000fec) ALERT_LOG(0,"Mouse vector changed from %08x,%08x to fec",lisa_os_mouse_x_ptr,lisa_os_mouse_y_ptr);
+    // Note: This setting fixes the mouse pointer in Smalltalk-80 when running it in Lisa Monitor v11.0 or v11.1
+  
+    // Note: There is also Lisa Monitor v11.2, but we could not find floppy disk images
+    // of it on the webs, hence it is unclear if it will work with the settings below.
+    lisa_os_mouse_x_ptr = 0x000010e6;
+    lisa_os_mouse_y_ptr = 0x000010e8;
+    running_lisa_os = LISA_MONITOR_RUNNING;
+    DEBUG_LOG(0, "Lisa Monitor v11.0 or v11.1 Running: v1=%08x v2=%08x", v1, v2);
+    if (monitor_patch)
+      apply_monitor_hle_patches();
+    return running_lisa_os;
+  }
+  else if ((v1 & 0x00ffffff) == 0x000e2980 && (v2 & 0x00ffffff) == 0x000e2ad2) // Lisa Monitor v11.8 - v1=000e2980 v2=000e2ad2  
+  {
+    // Note: This setting fixes the mouse pointer in Smalltalk-80 when running it in Lisa Monitor v11.8
     lisa_os_mouse_x_ptr = 0x000010ea;
     lisa_os_mouse_y_ptr = 0x000010ec;
     running_lisa_os = LISA_MONITOR_RUNNING;
-    DEBUG_LOG(0, "Lisa Monitor v11 Running: v1=%08x v2=%08x", v1, v2);
+    DEBUG_LOG(0, "Lisa Monitor v11.8 Running: v1=%08x v2=%08x", v1, v2);
     if (monitor_patch)
       apply_monitor_hle_patches();
     return running_lisa_os;

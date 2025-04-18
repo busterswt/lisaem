@@ -3336,6 +3336,8 @@ bool LisaEmApp::OnInit()
     my_lisaconfig->Save(pConfig, floppy_ram); // save it so defaults are created if the file doesn't exist yet
     ALERT_LOG(0, "resaved");
 
+    lisa_one_mode = (my_lisaconfig->iorom == 0x40)? 1:0;
+
     SetVendorName(_T("sunder.NET"));
     ALERT_LOG(0, "set vendor name");
 
@@ -7038,10 +7040,66 @@ void LisaWin::OnMouseMove(wxMouseEvent &event)
           // ALERT_LOG(0,"\n  Hover over floppy %d,%d-%d,%d",skin.floppy2_tl_x,skin.floppy2_tl_y,
           //                                                 skin.floppy2_tl_x+my_floppy0->GetWidth(),
           //                                                 skin.floppy2_tl_y+my_floppy0->GetHeight() );
-          if (event.LeftDown())
-            my_lisaframe->OnxFLOPPY();
-          if (event.RightDown())
-            my_lisaframe->OnxNewFLOPPY();
+          // Floppy eject routines: they trigger on mouse click in the floppy drive area on the Lisa skin: 
+          // If a floppy is currently inserted, prompt the user if they want to eject it (Yes/No),
+          // and, if yes, call the floppy_eject_button_pressed() in floppy.c, which triggers a Floppy IRQ, 
+          // the Lisa software intercepts it,
+          // sends a "floppy eject" command FLOP_CMD_UCLAMP, and we process it (in floppy.c) and eject the floppy.
+          // Note: The is_upper_floppy_currently_inserted(), is_lower_floppy_currently_inserted() calls used below
+          // can return true only if the emulation is running (if Lisa is on), and this is what we want here:
+          // for simplicity, we will not eject any floppies if the emulator is not running.
+          if (event.LeftDown() || event.RightDown())
+          {
+            if(lisa_one_mode) 
+            {
+              // Lisa 1 mode with two floppy drives:
+              bool is_shift_key_down = wxGetKeyState(WXK_SHIFT);
+              if(!is_shift_key_down && is_upper_floppy_currently_inserted())
+              {
+                if (yesnomessagebox("Do you want to eject the diskette in the upper drive 1 ?\n\n"
+                  "Note that the currently running Lisa software may ignore the eject request.", "") != 0) 
+                {
+                  floppy_eject_button_pressed(1); // 1 means "upper drive"
+                }
+              }
+              else if (is_shift_key_down && is_lower_floppy_currently_inserted())
+              {
+                if (yesnomessagebox("Do you want to eject the diskette in the lower drive 2 ?\n\n"
+                  "Note that the currently running Lisa software may ignore the eject request.", "") != 0) 
+                {
+                  floppy_eject_button_pressed(0); // 0 means "lower drive"
+                } 
+              }
+              else
+              {
+                // Show the "open floppy image file" dialog:
+                if (event.LeftDown())
+                  my_lisaframe->OnxFLOPPY();
+                else if (event.RightDown())
+                  my_lisaframe->OnxNewFLOPPY();
+              }
+            }
+            else
+            {
+              // Lisa 2 mode with one floppy drive (which is the lower drive):
+              if(is_lower_floppy_currently_inserted())
+              {
+                if (yesnomessagebox("Do you want to eject the diskette?\n\n"
+                  "Note that the currently running Lisa software may ignore the eject request.", "") != 0) 
+                {
+                  floppy_eject_button_pressed(0); // 0 means "lower drive"
+                } 
+              }
+              else
+              {
+                // Show the "open floppy image file" dialog:
+                if (event.LeftDown())
+                  my_lisaframe->OnxFLOPPY();
+                else if (event.RightDown())
+                  my_lisaframe->OnxNewFLOPPY();
+              }
+            }
+          }
         }
       }
 
@@ -8202,12 +8260,13 @@ void LisaEmFrame::OnxFLOPPY(void)
     bool is_shift_key_down = false;
     if (wxGetKeyState(WXK_SHIFT)) {
       is_shift_key_down = true;
-      ALERT_LOG(0, "'Insert Diskette' menu item clicked with Shift key down, which means 'insert it in the lower drive 2 in Lisa 1 mode'");
+      ALERT_LOG(0, "'Insert Diskette' menu item clicked while Shift key is down, which means 'insert it in the lower drive 2 in Lisa 1 mode'; lisa_one_mode is: %d",
+        lisa_one_mode);
     }
 
     if (lisa_one_mode && is_shift_key_down && my_lisaframe->running == emulation_off)
     {
-      wxMessageBox(_T("For simplicity, you can't insert a floppy in the lower drive 2 while Lisa is off. "
+      wxMessageBox(_T("For simplicity, you can't insert a diskette in the lower drive 2 while Lisa is off. "
         "Please turn it on and try again."),
         _T("Please turn on the Lisa first!"), wxICON_INFORMATION | wxOK);
       return;
@@ -8216,6 +8275,8 @@ void LisaEmFrame::OnxFLOPPY(void)
     {
       wxMessageBox(_T("A previously inserted diskette is still in the upper drive 1. "
         "Please eject the diskette before inserting another.\n\n"
+        "Tip: to eject it, click somewhere in the floppy drive area.\n\n"
+        "Tip: to eject the diskette in the lower drive 2, hold the 'Shift' key and then click somewhere in the floppy drive area.\n\n"
         "Tip: if you want to insert a diskette in the lower drive 2, hold the 'Shift' key and then click on the File->Insert diskette Menu."),
         _T("Diskette is already inserted!"), wxICON_INFORMATION | wxOK);
       return;
@@ -8224,14 +8285,17 @@ void LisaEmFrame::OnxFLOPPY(void)
     else if (lisa_one_mode && is_shift_key_down && is_lower_floppy_currently_inserted()) 
     {
       wxMessageBox(_T("A previously inserted diskette is still in the lower drive 2. "
-        "Please eject the diskette before inserting another."),
+        "Please eject the diskette before inserting another.\n\n"
+        "Tip: to eject the diskette in the lower drive 2, hold the 'Shift' key and then click somewhere in the floppy drive area.\n\n"
+        "Tip: to insert another diskette in the lower drive 2, first eject it, and then hold the 'Shift' key and then click on the File->Insert diskette Menu."),
         _T("Diskette is already inserted!"), wxICON_INFORMATION | wxOK);
       return;
     } 
     else if(!lisa_one_mode && is_lower_floppy_currently_inserted()) 
     {
       wxMessageBox(_T("A previously inserted diskette is still in the drive. "
-        "Please eject the diskette before inserting another."),
+        "Please eject the diskette before inserting another.\n\n"
+        "Tip: to eject it, click somewhere in the floppy drive area."),
         _T("Diskette is already inserted!"), wxICON_INFORMATION | wxOK);
       return;
     }
@@ -8239,7 +8303,13 @@ void LisaEmFrame::OnxFLOPPY(void)
     pause_run();
 
     wxString openfile;
-    wxFileDialog open(this, lisa_one_mode? wxT("Insert a Lisa Twiggy diskette") : wxT("Insert a Lisa Sony diskette"),
+    wxString dialog_title = lisa_one_mode? wxT("Choose a Twiggy diskette image file to insert") : wxT("Choose a Sony diskette image file to insert");
+    bool insert_in_upper_floppy_drive = (lisa_one_mode && !is_shift_key_down);
+    if (lisa_one_mode && insert_in_upper_floppy_drive)
+      dialog_title += " in Upper drive 1";
+    else if (lisa_one_mode && !insert_in_upper_floppy_drive)
+      dialog_title += " in Lower drive 2";
+    wxFileDialog open(this, dialog_title,
                       wxEmptyString,
                       wxEmptyString,
                       //                                                wxT("Disk Copy (*.dc42)|*.dc42|DART (*.dart)|*.dart|Image (*.image)|*.image|All (*.*)|*.*"),
@@ -8251,7 +8321,6 @@ void LisaEmFrame::OnxFLOPPY(void)
 
     resume_run();
 
-    bool insert_in_upper_floppy_drive = (lisa_one_mode && !is_shift_key_down);
     insert_floppy_anim(openfile, insert_in_upper_floppy_drive);
 }
 
@@ -8271,12 +8340,13 @@ void LisaEmFrame::OnxNewFLOPPY(void)
     bool is_shift_key_down = false;
     if (wxGetKeyState(WXK_SHIFT)) {
       is_shift_key_down = true;
-      ALERT_LOG(0, "'Insert blank diskette' menu item clicked with Shift key down!");
+      ALERT_LOG(0, "'Insert blank diskette' menu item clicked while Shift key is down, which means 'insert it in the lower drive 2 in Lisa 1 mode'; lisa_one_mode is: %d",
+        lisa_one_mode);
     }
 
     if (lisa_one_mode && is_shift_key_down && my_lisaframe->running == emulation_off)
     {
-      wxMessageBox(_T("For simplicity, you can't insert a floppy in the lower drive 2 while Lisa is off. "
+      wxMessageBox(_T("For simplicity, you can't insert a diskette in the lower drive 2 while Lisa is off. "
         "Please turn it on and try again."),
         _T("Please turn on the Lisa first!"), wxICON_INFORMATION | wxOK);
       return;
@@ -8285,6 +8355,8 @@ void LisaEmFrame::OnxNewFLOPPY(void)
     {
       wxMessageBox(_T("A previously inserted diskette is still in the upper drive 1. "
         "Please eject the diskette before inserting another.\n\n"
+        "Tip: to eject it, click somewhere in the floppy drive area.\n\n"
+        "Tip: to eject the diskette in the lower drive 2, hold the 'Shift' key and then click somewhere in the floppy drive area.\n\n"
         "Tip: if you want to insert a diskette in the lower drive 2, hold the 'Shift' key and then click on the File->Insert diskette Menu."),
         _T("Diskette is already inserted!"), wxICON_INFORMATION | wxOK);
       return;
@@ -8293,14 +8365,17 @@ void LisaEmFrame::OnxNewFLOPPY(void)
     else if (lisa_one_mode && is_shift_key_down && is_lower_floppy_currently_inserted()) 
     {
       wxMessageBox(_T("A previously inserted diskette is still in the lower drive 2. "
-        "Please eject the diskette before inserting another."),
+        "Please eject the diskette before inserting another.\n\n"
+        "Tip: to eject the diskette in the lower drive 2, hold the 'Shift' key and then click somewhere in the floppy drive area.\n\n"
+        "Tip: to insert another diskette in the lower drive 2, first eject it, and then hold the 'Shift' key and then click on the File->Insert diskette Menu."),
         _T("Diskette is already inserted!"), wxICON_INFORMATION | wxOK);
       return;
     } 
     else if(!lisa_one_mode && is_lower_floppy_currently_inserted()) 
     {
       wxMessageBox(_T("A previously inserted diskette is still in the drive. "
-        "Please eject the diskette before inserting another."),
+        "Please eject the diskette before inserting another.\n\n"
+        "Tip: to eject it, click somewhere in the floppy drive area."),
         _T("Diskette is already inserted!"), wxICON_INFORMATION | wxOK);
       return;
     }
@@ -8308,7 +8383,7 @@ void LisaEmFrame::OnxNewFLOPPY(void)
     pause_run();
 
     wxString openfile;
-    wxFileDialog open(this, wxT("Create and insert a blank microdiskette image"),
+    wxFileDialog open(this, wxT("Create and insert a blank diskette image"),
                       wxEmptyString,
                       wxT("blank.dc42"),
                       wxT("Disk Copy (*.dc42)|*.dc42|All (*.*)|*.*"),
@@ -8322,10 +8397,12 @@ void LisaEmFrame::OnxNewFLOPPY(void)
 
     const wxCharBuffer s = CSTR(openfile);
 
-    // TODO(TorZidan@): if the "double_sided_floppy" global var is set, create a new 800k floppy image below.
-    uint32 new_image_num_sectors_per_side = (lisa_one_mode)? 851:400; // Twiggy floppies have 851 sectors per side; Sony have 400.
+    uint32 new_image_num_sectors = (lisa_one_mode)? 1702:800; // Twiggy floppies have 1702 sectors; single-sided Sony400k have 800 sectors.
+    if (!lisa_one_mode && double_sided_floppy) // the "SunRem 2x Sided Sony" checkbox is checked in the Preferenses. Make an 800K floppy image with 1600 sectors.
+      new_image_num_sectors = 1600;
+
     int i = dc42_create((char *)(const char *)s, "-not a Macintosh disk-", 
-      new_image_num_sectors_per_side * 512 * 2, new_image_num_sectors_per_side * 2 * 12);
+      new_image_num_sectors * 512, new_image_num_sectors * 12);
     if (i)
     {
       wxMessageBox(_T("Could not create the diskette"),
@@ -9684,7 +9761,6 @@ int initialize_all_subsystems(void)
     serial_b = 0;
 
     floppy_iorom = my_lisaconfig->iorom;
-    lisa_one_mode = (floppy_iorom == 0x40)? 1:0;
     init_floppy(floppy_iorom);
 
     bitdepth = 8; // have to get this from the X Server side...
